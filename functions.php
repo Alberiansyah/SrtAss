@@ -156,7 +156,7 @@ function parseAss($content)
 }
 
 // Proses penggantian kata berdasarkan kamus
-function replaceWords($text)
+function replaceWords($text, $applyHighlight = true)
 {
     if (isset($_SESSION['dictionary'])) {
         // Urutkan kamus berdasarkan panjang kata kunci
@@ -167,7 +167,13 @@ function replaceWords($text)
         // Ganti kata berdasarkan kamus
         foreach ($_SESSION['dictionary'] as $key => $value) {
             $pattern = '/\b' . preg_quote($key, '/') . '\b/';
-            $text = preg_replace($pattern, $value, $text);
+            if ($applyHighlight) {
+                // Tambahkan highlight jika diperlukan
+                $text = preg_replace($pattern, '<span style="background-color: #00ff33;">' . $value . '</span>', $text);
+            } else {
+                // Ganti tanpa highlight
+                $text = preg_replace($pattern, $value, $text);
+            }
         }
     }
     return $text;
@@ -181,7 +187,7 @@ function convertToSrt($subtitles)
         $srt .= ($index + 1) . "\n";
         $start = convertTimeToSrt($subtitle['start']);
         $end = convertTimeToSrt($subtitle['end']);
-        $textWithReplacements = replaceWords($subtitle['text']); // Ganti teks menggunakan kamus
+        $textWithReplacements = replaceWords($subtitle['text'], false); // Tidak menerapkan highlight
         $srt .= $start . ' --> ' . $end . "\n";
         $srt .= $textWithReplacements . "\n\n";
     }
@@ -237,7 +243,7 @@ function convertToAss($subtitles, $styles = [])
         $start = convertTimeToAss($subtitle['start']);
         $end = convertTimeToAss($subtitle['end']);
         $style = $subtitle['style'] ?? 'Default';
-        $text = replaceWords($subtitle['text']); // Panggil fungsi replaceWords untuk mengganti kata
+        $text = replaceWords($subtitle['text'], false); // Tidak menerapkan highlight
         $text = str_replace("\n", "\\N", $text); // Ganti baris baru dengan \N
         $ass .= "Dialogue: 0,$start,$end,$style,,0,0,0,,$text\n";
     }

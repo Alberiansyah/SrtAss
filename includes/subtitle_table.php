@@ -11,21 +11,22 @@
         </thead>
         <tbody>
             <?php $no = 1;
-            foreach ($subtitles as $subtitle): ?>
+            foreach ($subtitles as $index => $subtitle): ?>
                 <tr>
                     <td><?= $no++ ?></td>
                     <td><?= convertTimeToAss($subtitle['start']); ?></td>
                     <td><?= convertTimeToAss($subtitle['end']); ?></td>
                     <td><?= htmlspecialchars($subtitle['text']); ?></td>
                     <td>
-                        <?php
-                        $modifiedText = replaceWords($subtitle['text']);
-                        if ($modifiedText !== $subtitle['text']) {
-                            echo '<span style="background-color: #00ff33;">' . htmlspecialchars($modifiedText) . '</span>';
-                        } else {
-                            echo htmlspecialchars($modifiedText);
-                        }
-                        ?>
+                        <div class="editable" data-index="<?= $index ?>">
+                            <?php
+                            $modifiedText = replaceWords($subtitle['text'], true); // Terapkan highlight
+                            ?>
+                            <span class="text-display" data-original-text="<?= htmlspecialchars($subtitle['text']) ?>">
+                                <?= $modifiedText ?>
+                            </span>
+                            <input type="text" class="text-edit" style="display: none;" value="<?= htmlspecialchars(strip_tags($modifiedText)) ?>">
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>
