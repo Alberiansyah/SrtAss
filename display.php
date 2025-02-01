@@ -18,6 +18,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subtitle Display</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         .editable {
             position: relative;
@@ -30,6 +31,26 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         .text-edit {
             width: 100%;
             box-sizing: border-box;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .card.shadow-sm {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-lg {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+        }
+
+        .form-select,
+        .form-control {
+            border-radius: 5px;
+            padding: 10px;
         }
     </style>
 </head>
@@ -52,7 +73,14 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     </nav>
 
     <div class="container mt-5">
-        <h2 class="text-center">Subtitle Content</h2>
+
+        <div class="text-center mt-3">
+            <?php if (isset($_SESSION['file_name'])) : ?>
+                <h1><span class="badge bg-primary"><?= $_SESSION['file_name'] ?></span></h1>
+            <?php else : ?>
+            <?php endif; ?>
+        </div>
+        <h2 class="text-center mt-4 mb-4">Subtitle Content</h2>
         <?php if (!empty($subtitles)): ?>
             <?php require __DIR__ . '/includes/dictionary_form.php'; ?>
             <?php require __DIR__ . '/includes/download_form.php'; ?>

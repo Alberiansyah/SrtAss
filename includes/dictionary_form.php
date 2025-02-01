@@ -1,24 +1,31 @@
-<h3 class="text-center mt-4">Add to Dictionary</h3>
-<form method="post" class="mt-4">
-    <div class="row mb-3"> <!-- Ganti form-row dengan row -->
-        <div class="col-md-5">
-            <label for="key" class="form-label">Word to Replace</label>
-            <input type="text" class="form-control" name="key" required>
-        </div>
-        <div class="col-md-5">
-            <label for="value" class="form-label">Replace With</label>
-            <input type="text" class="form-control" name="value" required>
-        </div>
-        <div class="col-md-2 align-self-end">
-            <button type="submit" name="add_to_dictionary" class="btn btn-success">Add</button>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <form method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="key" class="form-label">Word to Replace</label>
+                        <input type="text" class="form-control" name="key" required placeholder="Enter word to replace">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="value" class="form-label">Replace With</label>
+                        <input type="text" class="form-control" name="value" required placeholder="Enter replacement word">
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" name="add_to_dictionary" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add to Dictionary
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-</form>
+</div>
 
 <div class="text-center mt-4">
     <form method="post">
-        <button type="submit" name="clear_session" class="btn btn-danger">Clear Session & Reload</button>
+        <button type="submit" name="clear_session" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i> Clear Session & Reload
+        </button>
     </form>
 </div>
-
-<span><?= $_SESSION['file_name'] ?></span>

@@ -1,23 +1,25 @@
-<h3 class="text-center mt-4">Download Subtitle</h3>
-<div class="row">
-    <div class="col-md-6">
-        <form method="post" class="mt-4">
-            <div class="mb-3"> <!-- Ganti form-group dengan mb-3 -->
-                <select name="format" class="form-select" required> <!-- Ganti form-control dengan form-select -->
-                    <option value="ass">Download as ASS</option>
-                </select>
+<h3 class="text-center mt-4 mb-4">Download Subtitle</h3>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card shadow-sm mb-4">
+                <form method="post">
+                    <input type="hidden" name="format" value="ass">
+                    <button type="submit" name="download" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-download"></i> Download ASS
+                    </button>
+                </form>
             </div>
-            <button type="submit" name="download" class="btn btn-primary">Download</button>
-        </form>
-    </div>
-    <div class="col-md-6">
-        <form method="post" class="mt-4">
-            <div class="mb-3"> <!-- Ganti form-group dengan mb-3 -->
-                <select name="format" class="form-select" required> <!-- Ganti form-control dengan form-select -->
-                    <option value="srt">Download as SRT</option>
-                </select>
+        </div>
+        <div class="col-md-6 text-center">
+            <div class="card shadow-sm mb-4">
+                <form method="post">
+                    <input type="hidden" name="format" value="srt">
+                    <button type="submit" name="download" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-download"></i> Download SRT
+                    </button>
+                </form>
             </div>
-            <button type="submit" name="download" class="btn btn-primary">Download</button>
-        </form>
+        </div>
     </div>
 </div>
