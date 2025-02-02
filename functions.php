@@ -22,19 +22,7 @@ function handlePostRequest()
 
     // Memastikan kamus default
     if (!isset($_SESSION['dictionary'])) {
-        $_SESSION['dictionary'] = [
-            'Saya' => 'Aku',
-            'saya' => 'aku',
-            'Kamu' => 'Kau',
-            'kamu' => 'kau',
-            'Anda' => 'kau',
-            'anda' => 'kau',
-        ];
-    }
-
-    // Memastikan data subtitle disimpan di session
-    if (!isset($_SESSION['subtitles'])) {
-        $_SESSION['subtitles'] = []; // Inisialisasi jika belum ada
+        $_SESSION['dictionary'] = loadDictionaryFromJson();
     }
 
     if (isset($_POST['add_to_dictionary'])) {
@@ -42,6 +30,7 @@ function handlePostRequest()
         $value = trim($_POST['value']);
         if (!empty($key) && !empty($value)) {
             $_SESSION['dictionary'][$key] = $value;
+            saveDictionaryToJson($_SESSION['dictionary']); // Simpan ke JSON
         }
     }
 
@@ -53,6 +42,7 @@ function handlePostRequest()
                 $subtitle['text'] = str_replace($value_to_restore, $key_to_remove, $subtitle['text']);
             }
             unset($_SESSION['dictionary'][$key_to_remove]);
+            saveDictionaryToJson($_SESSION['dictionary']); // Simpan ke JSON
         }
     }
 
@@ -85,6 +75,37 @@ function handlePostRequest()
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     }
+}
+
+function saveDictionaryToJson($dictionary, $filename = 'dictionary.json')
+{
+    $folder = 'wp-content/json/';
+
+    // Pastikan folder ada
+    if (!is_dir($folder)) {
+        mkdir($folder, 0777, true);
+    }
+
+    // Salin dictionary untuk di-sort tanpa mengubah data asli di session
+    $sortedDictionary = $dictionary;
+
+    // Urutkan berdasarkan key secara ascending
+    ksort($sortedDictionary, SORT_STRING | SORT_FLAG_CASE);
+
+    // Simpan ke JSON
+    $jsonData = json_encode($sortedDictionary, JSON_PRETTY_PRINT);
+    file_put_contents($folder . $filename, $jsonData);
+}
+
+function loadDictionaryFromJson($filename = 'dictionary.json')
+{
+    $folder = 'wp-content/json/'; // Folder tempat file JSON disimpan
+    $filePath = $folder . $filename;
+    if (file_exists($filePath)) {
+        $jsonData = file_get_contents($filePath);
+        return json_decode($jsonData, true);
+    }
+    return [];
 }
 
 function parseSrt($content)

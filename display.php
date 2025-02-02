@@ -52,6 +52,60 @@ $subtitles = $_SESSION['subtitles'] ?? [];
             border-radius: 5px;
             padding: 10px;
         }
+
+        ::-webkit-scrollbar {
+            width: 7.5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+
+            background: #007bff;
+            /* Warna biru */
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #e9ecef;
+            /* Warna abu-abu muda */
+            border-radius: 10px;
+        }
+
+        #searchInput {
+            border-radius: 25px;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+        }
+
+        #searchInput:focus {
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.25);
+        }
+
+        .dictionary-item {
+            transition: all 0.3s ease;
+        }
+
+        .dictionary-item:hover {
+            transform: translateX(5px);
+        }
+
+        .highlight {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        #searchResults .list-group-item {
+            border-radius: 0.25rem;
+            margin-bottom: 5px;
+        }
+
+        #clearSearch {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
     </style>
 </head>
 
@@ -95,13 +149,9 @@ $subtitles = $_SESSION['subtitles'] ?? [];
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    document.getElementById('toggleDictionary').addEventListener('click', function() {
-        const dictionaryGrid = document.getElementById('dictionaryGrid');
-        if (dictionaryGrid.style.display === 'none') {
-            dictionaryGrid.style.display = 'flex'; // Tampilkan grid
-        } else {
-            dictionaryGrid.style.display = 'none'; // Sembunyikan grid
-        }
+    // Toggle dictionary grid
+    $('#toggleDictionary').click(function() {
+        $('#dictionaryGrid').toggle();
     });
 
     $(document).ready(function() {
@@ -143,6 +193,49 @@ $subtitles = $_SESSION['subtitles'] ?? [];
             if (e.which === 13) { // Enter key
                 $(this).blur(); // Trigger blur event to save changes
             }
+        });
+
+        const $originalGrid = $('#dictionaryGrid');
+        const $searchResults = $('#searchResults');
+
+        // Fungsi pencarian
+        $('#searchInput').on('input', function() {
+            const query = $(this).val().trim().toLowerCase();
+            $searchResults.empty().hide();
+            $originalGrid.show();
+
+            if (query) {
+                $originalGrid.hide();
+                $searchResults.show();
+
+                // Cari di semua item
+                $('.dictionary-item').each(function() {
+                    const $item = $(this);
+                    const text = $item.find('.dictionary-text').text().toLowerCase();
+
+                    if (text.includes(query)) {
+                        // Clone item asli dan tambahkan highlight
+                        const $clone = $item.clone();
+                        const highlightedText = $clone.find('.dictionary-text').html()
+                            .replace(new RegExp(`(${query})`, 'gi'), '<span class="highlight">$1</span>');
+
+                        $clone.find('.dictionary-text').html(highlightedText);
+                        $searchResults.append(
+                            `<div class="col-12">` +
+                            `<ul class="list-group">${$clone.prop('outerHTML')}</ul>` +
+                            `</div>`
+                        );
+                    }
+                });
+            } else {
+                $originalGrid.show();
+                $searchResults.hide();
+            }
+        });
+
+        // Tombol clear search
+        $('#clearSearch').click(function() {
+            $('#searchInput').val('').trigger('input');
         });
     });
 </script>
