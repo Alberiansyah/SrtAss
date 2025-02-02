@@ -1,0 +1,86 @@
+.editable {
+    position: relative;
+}
+
+.text-display {
+    cursor: pointer;
+}
+
+.text-edit {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card.shadow-sm {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-lg {
+    padding: 10px 20px;
+    font-size: 1.1rem;
+}
+
+.form-select,
+.form-control {
+    border-radius: 5px;
+    padding: 10px;
+}
+
+::-webkit-scrollbar {
+    width: 7.5px;
+}
+
+::-webkit-scrollbar-thumb {
+
+    background: #007bff;
+    /* Warna biru */
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+
+}
+
+::-webkit-scrollbar-track {
+    background: #e9ecef;
+    /* Warna abu-abu muda */
+    border-radius: 10px;
+}
+
+#searchInput {
+    border-radius: 25px;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+}
+
+#searchInput:focus {
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.25);
+}
+
+.dictionary-item {
+    transition: all 0.3s ease;
+}
+
+.dictionary-item:hover {
+    transform: translateX(5px);
+}
+
+.highlight {
+    background-color: #ffeb3b;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+#searchResults .list-group-item {
+    border-radius: 0.25rem;
+    margin-bottom: 5px;
+}
+
+#clearSearch {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
