@@ -1,14 +1,13 @@
 # SrtAss
 
-Untuk menggunakan aplikasi ini, pertama buat lebih file `dictionary.json` di `wp-content/json/`
+To use this application, first create a `dictionary.json` file in `wp-content/json/`
 
-Kemudian buat contoh kata yang ingin anda replace
+Then, add example words you want to replace:
 
 ```
 {
-    "Anda": "kau",
-    "anda": "kau",
+    "Hey how's it going": "Good morning",
 }
 ```
 
-Jika kata tidak tidak otomatis terganti coba hapus ulang session.
+If the words are not replaced automatically, try clearing the session and retry.
