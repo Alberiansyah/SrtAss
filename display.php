@@ -21,8 +21,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- <link rel="stylesheet" href="wp-content/css/core.css">
     <link rel="stylesheet" href="wp-content/css/theme-default.css">
-    <link rel="stylesheet" href="wp-content/css/demo.css">
-    <link rel="stylesheet" href="wp-content/css/node-waves.css"> -->
+    <link rel="stylesheet" href="wp-content/css/demo.css"> -->
     <link rel="stylesheet" href="wp-content/css/css.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

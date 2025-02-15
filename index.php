@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Subtitle</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="wp-content/css/core.css">
-    <link rel="stylesheet" href="wp-content/css/theme-default.css">
+    <!-- <link rel="stylesheet" href="wp-content/css/core.css">
+    <link rel="stylesheet" href="wp-content/css/theme-default.css"> -->
 </head>
 
 <body class="d-flex align-items-center justify-content-center vh-100">
