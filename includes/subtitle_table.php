@@ -1,5 +1,5 @@
 <div class="container-fluid">
-    <table class="table table-bordered mt-4">
+    <table class="table table-bordered mt-4 mb-3">
         <thead class="table-dark">
             <tr>
                 <th>No</th>

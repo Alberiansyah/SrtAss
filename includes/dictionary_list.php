@@ -8,9 +8,8 @@
     <!-- Search Bar -->
     <div class="row justify-content-center mb-4">
         <div class="col-md-6">
-            <div class="input-group">
-                <input type="text" id="searchInput" class="form-control" placeholder="Find a word...">
-            </div>
+            <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Find a word...">
+
         </div>
     </div>
 
