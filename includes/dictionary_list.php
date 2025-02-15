@@ -9,7 +9,7 @@
     <div class="row justify-content-center mb-4">
         <div class="col-md-6">
             <div class="input-group">
-                <input type="text" id="searchInput" class="form-control" placeholder="Cari kata atau terjemahan...">
+                <input type="text" id="searchInput" class="form-control" placeholder="Find a word...">
             </div>
         </div>
     </div>
@@ -43,3 +43,85 @@
         <?php endforeach; ?>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        const $originalGrid = $('#dictionaryGrid');
+        const $searchResults = $('#searchResults');
+        let isGridExpanded = false; // Variabel untuk menyimpan state expand/collapse
+
+        // Simpan state expand/collapse saat tombol toggle diklik
+        $('#toggleDictionary').click(function() {
+            isGridExpanded = $originalGrid.is(':visible');
+        });
+
+        // Fungsi pencarian
+        $('#searchInput').on('input', function() {
+            const query = $(this).val().trim().toLowerCase();
+            $searchResults.empty().hide();
+
+            if (query) {
+                // Saat ada query, sembunyikan grid asli dan tampilkan hasil pencarian
+                $originalGrid.hide();
+                $searchResults.show();
+
+                // Cari di semua item
+                $('.dictionary-item').each(function() {
+                    const $item = $(this);
+                    const text = $item.find('.dictionary-text').text().toLowerCase();
+
+                    if (text.includes(query)) {
+                        // Clone item asli dan tambahkan highlight
+                        const $clone = $item.clone();
+                        const highlightedText = $clone.find('.dictionary-text').html()
+                            .replace(new RegExp(`(${query})`, 'gi'), '<span class="highlight">$1</span>');
+
+                        $clone.find('.dictionary-text').html(highlightedText);
+                        $searchResults.append(
+                            `<div class="col-12">` +
+                            `<ul class="list-group">${$clone.prop('outerHTML')}</ul>` +
+                            `</div>`
+                        );
+                    }
+                });
+            } else {
+                // Saat query dikosongkan, kembalikan ke state sebelumnya
+                $searchResults.hide();
+                if (isGridExpanded) {
+                    $originalGrid.show(); // Tampilkan grid jika sebelumnya expand
+                } else {
+                    $originalGrid.hide(); // Sembunyikan grid jika sebelumnya collapse
+                }
+            }
+        });
+
+        // Tombol clear search
+        $('#clearSearch').click(function() {
+            $('#searchInput').val('').trigger('input');
+        });
+    });
+</script>
+
+<style>
+    .highlight {
+        background-color: #ffeb3b;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: bold;
+    }
+
+    #searchResults .list-group-item {
+        border-radius: 0.25rem;
+        margin-bottom: 5px;
+    }
+
+    #searchInput {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    #clearSearch {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+</style>
