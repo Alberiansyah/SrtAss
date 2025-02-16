@@ -6,7 +6,7 @@
                 <form method="post">
                     <input type="hidden" name="format" value="ass">
                     <button type="submit" name="download" class="btn btn-primary btn-lg w-100">
-                        <i class="fas fa-download"></i> Download ASS
+                        <i class="fas fa-download mx-1"></i> Download ASS
                     </button>
                 </form>
             </div>
@@ -16,7 +16,7 @@
                 <form method="post">
                     <input type="hidden" name="format" value="srt">
                     <button type="submit" name="download" class="btn btn-primary btn-lg w-100">
-                        <i class="fas fa-download"></i> Download SRT
+                        <i class="fas fa-download mx-1"></i> Download SRT
                     </button>
                 </form>
             </div>

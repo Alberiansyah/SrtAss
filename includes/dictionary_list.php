@@ -2,7 +2,9 @@
 <div class="container-fluid">
     <h3 class="text-center mt-2">Current Dictionary</h3>
     <div class="text-center">
-        <button id="toggleDictionary" class="btn btn-primary mt-3 mb-3">Expand/Collapse Dictionary</button>
+        <button id="toggleDictionary" class="btn btn-primary mt-3 mb-3">
+            <i class="fas fa-caret-right mx-1"></i> Expand/Collapse Dictionary
+        </button>
     </div>
 
     <!-- Search Bar -->
@@ -45,13 +47,26 @@
 
 <script>
     $(document).ready(function() {
-        const $originalGrid = $('#dictionaryGrid');
-        const $searchResults = $('#searchResults');
-        let isGridExpanded = false; // Variabel untuk menyimpan state expand/collapse
+        $(document).ready(function() {
+            const $toggleButton = $('#toggleDictionary');
+            const $icon = $toggleButton.find('i');
+            const $originalGrid = $('#dictionaryGrid');
+            let isGridExpanded = false; // Variabel untuk menyimpan state expand/collapse
 
-        // Simpan state expand/collapse saat tombol toggle diklik
-        $('#toggleDictionary').click(function() {
-            isGridExpanded = $originalGrid.is(':visible');
+            // Fungsi toggle
+            $toggleButton.click(function() {
+                isGridExpanded = !isGridExpanded; // Toggle state
+
+                if (isGridExpanded) {
+                    $originalGrid.show();
+                    $icon.removeClass('fas fa-caret-right').addClass('fas fa-caret-down'); // Ubah ikon ke minus saat expand 
+                    // $icon.removeClass('fa-compress').addClass('fa-expand'); // Ubah ikon ke minus saat expand
+                } else {
+                    $originalGrid.hide();
+                    $icon.removeClass('fas fa-caret-down').addClass('fas fa-caret-right'); // Ubah ikon ke plus saat collapse
+                    // $icon.removeClass('fa-expand').addClass('fa-compress'); // Ubah ikon ke plus saat collapse
+                }
+            });
         });
 
         // Fungsi pencarian

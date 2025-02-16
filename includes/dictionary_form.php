@@ -14,7 +14,7 @@
                 </div>
                 <div class="text-center">
                     <button type="submit" name="add_to_dictionary" class="btn btn-success">
-                        <i class="fas fa-plus"></i> Add to Dictionary
+                        <i class="fas fa-plus mx-1"></i> Add to Dictionary
                     </button>
                 </div>
             </form>
@@ -25,7 +25,7 @@
 <div class="text-center mt-4">
     <form method="post">
         <button type="submit" name="clear_session" class="btn btn-danger">
-            <i class="fas fa-trash-alt"></i> Clear Session & Reload
+            <i class="fas fa-trash-alt mx-1"></i> Clear Session & Reload
         </button>
     </form>
 </div>
