@@ -36,17 +36,14 @@
 }
 
 ::-webkit-scrollbar-thumb {
-
-    background: #007bff;
-    /* Warna biru */
-    background-color: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    /* Sama dengan scrollbar-color */
     border-radius: 10px;
-
 }
 
 ::-webkit-scrollbar-track {
-    background: #e9ecef;
-    /* Warna abu-abu muda */
+    background: transparent;
+    /* Mengikuti nilai 'transparent' dari scrollbar-color */
     border-radius: 10px;
 }
 
