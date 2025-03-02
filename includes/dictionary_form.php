@@ -28,4 +28,10 @@
             <i class="fas fa-trash-alt mx-1"></i> Clear Session & Reload
         </button>
     </form>
+    <!-- <form method="post">
+        <button type="submit" name="clear_session"
+            class="btn btn-danger btn-lg rounded-circle position-absolute top-0 end-0 m-2">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </form> -->
 </div>

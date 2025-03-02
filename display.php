@@ -45,7 +45,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         </div>
     </nav>
 
-    <div class="container mt-5">
+    <div class="container">
 
         <div class="text-center mt-3">
             <?php if (isset($_SESSION['file_name'])) : ?>

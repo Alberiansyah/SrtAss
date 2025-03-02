@@ -1,6 +1,6 @@
 <!-- di dalam dictionary_list.php -->
 <div class="container-fluid">
-    <h3 class="text-center mt-2">Current Dictionary</h3>
+    <h3 class="text-center">Current Dictionary</h3>
     <div class="text-center">
         <button id="toggleDictionary" class="btn btn-primary mt-3 mb-3">
             <i class="fas fa-caret-right mx-1"></i> Expand/Collapse Dictionary
