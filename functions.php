@@ -83,7 +83,7 @@ function handlePostRequest()
 
 function saveDictionaryToJson($dictionary, $filename = 'dictionary.json')
 {
-    $folder = 'wp-content/json/';
+    $folder = 'content/json/';
 
     // Pastikan folder ada
     if (!is_dir($folder)) {
@@ -103,7 +103,7 @@ function saveDictionaryToJson($dictionary, $filename = 'dictionary.json')
 
 function loadDictionaryFromJson($filename = 'dictionary.json')
 {
-    $folder = 'wp-content/json/'; // Folder tempat file JSON disimpan
+    $folder = 'content/json/'; // Folder tempat file JSON disimpan
     $filePath = $folder . $filename;
     if (file_exists($filePath)) {
         $jsonData = file_get_contents($filePath);

@@ -1,6 +1,6 @@
 # SrtAss
 
-To use this application, first create a `dictionary.json` file in `wp-content/json/`
+To use this application, first create a `dictionary.json` file in `content/json/`
 
 Then, add example words you want to replace:
 
