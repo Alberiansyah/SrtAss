@@ -18,13 +18,15 @@
                             <button type="submit" name="add_to_dictionary" class="btn btn-success w-48">
                                 <i class="fas fa-plus mx-1"></i> Add to Dictionary
                             </button>
-                            <button type="submit" name="clear_session" class="btn btn-danger w-48">
-                                <i class="fas fa-trash-alt mx-1"></i> Clear Session
-                            </button>
-                        </div>
+                    </form>
+                    <form method="post">
+                        <button type="submit" name="clear_session" class="btn btn-danger w-48">
+                            <i class="fas fa-trash-alt mx-1"></i> Clear Session
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
