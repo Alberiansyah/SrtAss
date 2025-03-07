@@ -45,25 +45,22 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         </div>
     </nav>
 
-    <div class="container">
-
-        <div class="text-center mt-3">
-            <?php if (isset($_SESSION['file_name'])) : ?>
-                <h1><span class="badge bg-primary"><?= $_SESSION['file_name'] ?></span></h1>
-            <?php else : ?>
-            <?php endif; ?>
-        </div>
-        <h2 class="text-center mt-4 mb-4">Subtitle Content</h2>
-        <?php if (!empty($subtitles)): ?>
-            <?php require __DIR__ . '/includes/dictionary_form.php'; ?>
-            <?php require __DIR__ . '/includes/download_form.php'; ?>
+    <div class="text-center mt-3">
+        <?php if (isset($_SESSION['file_name'])) : ?>
+            <h1><span class="badge bg-primary"><?= $_SESSION['file_name'] ?></span></h1>
+        <?php else : ?>
+        <?php endif; ?>
     </div>
-    <?php require __DIR__ . '/includes/dictionary_list.php'; ?>
-    <?php require __DIR__ . '/includes/subtitle_table.php'; ?>
-<?php else: ?>
-    <p class="alert alert-warning text-center">No subtitle data found.</p>
-<?php endif; ?>
-</div>
+    <h2 class="text-center mt-4 mb-4">Subtitle Content</h2>
+    <?php if (!empty($subtitles)): ?>
+        <?php require __DIR__ . '/includes/dictionary_form.php'; ?>
+        <?php require __DIR__ . '/includes/download_form.php'; ?>
+        <?php require __DIR__ . '/includes/dictionary_list.php'; ?>
+        <?php require __DIR__ . '/includes/subtitle_table.php'; ?>
+    <?php else: ?>
+        <p class="alert alert-warning text-center">No subtitle data found.</p>
+    <?php endif; ?>
+    </div>
 </body>
 
 </html>
