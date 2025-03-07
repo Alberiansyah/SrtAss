@@ -81,3 +81,84 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
+
+/* Highlight text on search */
+.highlight {
+    background-color: #ffeb3b;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+#searchResults .list-group-item {
+    border-radius: 0.25rem;
+    margin-bottom: 5px;
+}
+
+#searchInput {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#clearSearch {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Add hover effects on dictionary list items */
+.dictionary-item:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
+
+.dictionary-text {
+    font-size: 14px;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    opacity: 0.85;
+}
+
+/* Button and form styling */
+.card-body {
+    padding: 20px;
+}
+
+.card-header {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Spacing and card hover effect */
+.card {
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+}
+
+.card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Button styles */
+.btn-primary, .btn-success, .btn-danger {
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover, .btn-success:hover, .btn-danger:hover {
+    transform: scale(1.05);
+}
+
+/* Add some spacing between dictionary items */
+#dictionaryGrid .col-md-3 {
+    margin-bottom: 20px;
+}

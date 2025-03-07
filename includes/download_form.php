@@ -1,7 +1,7 @@
-<h3 class="text-center mt-4 mb-4">Download Subtitle</h3>
+<h3 class="text-center mt-2 mb-4">Download Subtitle</h3>
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
+        <div class="col-md-5 text-center">
             <div class="card shadow-sm mb-4">
                 <form method="post">
                     <input type="hidden" name="format" value="ass">
@@ -11,7 +11,7 @@
                 </form>
             </div>
         </div>
-        <div class="col-md-6 text-center">
+        <div class="col-md-5 text-center">
             <div class="card shadow-sm mb-4">
                 <form method="post">
                     <input type="hidden" name="format" value="srt">

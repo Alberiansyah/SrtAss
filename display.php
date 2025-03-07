@@ -45,13 +45,12 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         </div>
     </nav>
 
-    <div class="text-center mt-3">
+    <div class="text-center mt-3 mb-4">
         <?php if (isset($_SESSION['file_name'])) : ?>
             <h1><span class="badge bg-primary"><?= $_SESSION['file_name'] ?></span></h1>
         <?php else : ?>
         <?php endif; ?>
     </div>
-    <h2 class="text-center mt-4 mb-4">Subtitle Content</h2>
     <?php if (!empty($subtitles)): ?>
         <?php require __DIR__ . '/includes/dictionary_form.php'; ?>
         <?php require __DIR__ . '/includes/download_form.php'; ?>
