@@ -247,11 +247,17 @@ function convertToSrt($subtitles)
         $start = convertTimeToSrt($subtitle['start']);
         $end = convertTimeToSrt($subtitle['end']);
         $textWithReplacements = replaceWords($subtitle['text'], false); // Tidak menerapkan highlight
+
+        // Tambahkan penggantian tag italic dari ASS ke format HTML yang sesuai untuk SRT
+        $textWithReplacements = str_replace('{\i1}', '<i>', $textWithReplacements);
+        $textWithReplacements = str_replace('{\i0}', '</i>', $textWithReplacements);
+
         $srt .= $start . ' --> ' . $end . "\n";
         $srt .= $textWithReplacements . "\n\n";
     }
     return trim($srt);
 }
+
 
 function convertTimeToSrt($time)
 {
