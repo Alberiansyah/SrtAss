@@ -46,7 +46,6 @@
 ## Folder Structure
 
 - `content/json/`: Store the dictionary file (`dictionary.json`) here.
-- `uploads/`: Folder to store uploaded subtitle files (temporary).
 
 ## Technologies Used
 
