@@ -1,9 +1,63 @@
 $(document).ready(function() {
 
     // Toggle dictionary grid
-    $('#toggleDictionary').click(function() {
-        $('#dictionaryGrid').toggle();
-    });
+    if ($('#dictionaryGrid').length && $('#dictionaryGrid').children().length > 0) {
+        // Only show the toggle button and search input if dictionary has words
+        $('#toggleDictionary').show();
+        $('#searchInput').show();
+
+        // Toggle dictionary grid visibility
+        $('#toggleDictionary').click(function() {
+            $('#dictionaryGrid').toggle();
+        });
+
+        // Search function
+        $('#searchInput').on('input', function() {
+            const query = $(this).val().trim().toLowerCase();
+            const $searchResults = $('#searchResults');
+            const $originalGrid = $('#dictionaryGrid');
+
+            $searchResults.empty().hide();
+            $originalGrid.show();
+
+            if (query) {
+                $originalGrid.hide();
+                $searchResults.show();
+
+                // Search through all items
+                $('.dictionary-item').each(function() {
+                    const $item = $(this);
+                    const text = $item.find('.dictionary-text').text().toLowerCase();
+
+                    if (text.includes(query)) {
+                        // Clone item and highlight the query
+                        const $clone = $item.clone();
+                        const highlightedText = $clone.find('.dictionary-text').html()
+                            .replace(new RegExp(`(${query})`, 'gi'), '<span class="highlight">$1</span>');
+
+                        $clone.find('.dictionary-text').html(highlightedText);
+                        $searchResults.append(
+                            `<div class="col-12">` +
+                            `<ul class="list-group">${$clone.prop('outerHTML')}</ul>` +
+                            `</div>`
+                        );
+                    }
+                });
+            } else {
+                $originalGrid.show();
+                $searchResults.hide();
+            }
+        });
+
+        // Clear search functionality
+        $('#clearSearch').click(function() {
+            $('#searchInput').val('').trigger('input');
+        });
+    } else {
+        // Hide search and toggle button if no dictionary data
+        $('#toggleDictionary').hide();
+        $('#searchInput').hide();
+    }
     
     // Handle double-click to show input field
     $('.text-display').on('dblclick', function() {
@@ -45,46 +99,4 @@ $(document).ready(function() {
         }
     });
 
-    const $originalGrid = $('#dictionaryGrid');
-    const $searchResults = $('#searchResults');
-
-    // Fungsi pencarian
-    $('#searchInput').on('input', function() {
-        const query = $(this).val().trim().toLowerCase();
-        $searchResults.empty().hide();
-        $originalGrid.show();
-
-        if (query) {
-            $originalGrid.hide();
-            $searchResults.show();
-
-            // Cari di semua item
-            $('.dictionary-item').each(function() {
-                const $item = $(this);
-                const text = $item.find('.dictionary-text').text().toLowerCase();
-
-                if (text.includes(query)) {
-                    // Clone item asli dan tambahkan highlight
-                    const $clone = $item.clone();
-                    const highlightedText = $clone.find('.dictionary-text').html()
-                        .replace(new RegExp(`(${query})`, 'gi'), '<span class="highlight">$1</span>');
-
-                    $clone.find('.dictionary-text').html(highlightedText);
-                    $searchResults.append(
-                        `<div class="col-12">` +
-                        `<ul class="list-group">${$clone.prop('outerHTML')}</ul>` +
-                        `</div>`
-                    );
-                }
-            });
-        } else {
-            $originalGrid.show();
-            $searchResults.hide();
-        }
-    });
-
-    // Tombol clear search
-    $('#clearSearch').click(function() {
-        $('#searchInput').val('').trigger('input');
-    });
 });
