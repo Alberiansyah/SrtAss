@@ -3,7 +3,7 @@ $(document).ready(function() {
     /* =======================================
        Dictionary Grid & Search Setup
        ======================================= */
-       
+
     let isDictionaryExpanded = false; // Status expand dictionary
     if ($('#dictionaryGrid').length && $('#dictionaryGrid').children().length > 0) {
         // Tampilkan tombol toggle dan input search hanya jika data kamus tersedia
@@ -18,73 +18,73 @@ $(document).ready(function() {
         });
 
         // Fungsi pencarian
-    $('#searchInput').on('input', function() {
-        const query = $(this).val().trim().toLowerCase();
-        const $searchResults = $('#searchResults');
-        const $originalGrid = $('#dictionaryGrid');
-        const $paginationControls = $('#paginationControls');
+        $('#searchInput').on('input', function() {
+            const query = $(this).val().trim().toLowerCase();
+            const $searchResults = $('#searchResults');
+            const $originalGrid = $('#dictionaryGrid');
+            const $paginationControls = $('#paginationControls');
 
-        // Reset tampilan pencarian dan grid
-        $searchResults.empty().hide();
-        $originalGrid.hide(); // Selalu sembunyikan dictionary saat pencarian aktif
-        $paginationControls.hide(); // Selalu sembunyikan pagination saat pencarian aktif
+            // Reset tampilan pencarian dan grid
+            $searchResults.empty().hide();
+            $originalGrid.hide(); // Selalu sembunyikan dictionary saat pencarian aktif
+            $paginationControls.hide(); // Selalu sembunyikan pagination saat pencarian aktif
 
-        if (query) {
-            // Tampilkan hasil pencarian
-            $searchResults.show();
+            if (query) {
+                // Tampilkan hasil pencarian
+                $searchResults.show();
 
-            // Lakukan pencarian pada seluruh dictionary
-            const results = [];
-            for (const [key, value] of Object.entries(fullDictionary)) {
-                if (key.toLowerCase().includes(query) || value.toLowerCase().includes(query)) {
-                    results.push({ key, value });
+                // Lakukan pencarian pada seluruh dictionary
+                const results = [];
+                for (const [key, value] of Object.entries(fullDictionary)) {
+                    if (key.toLowerCase().includes(query) || value.toLowerCase().includes(query)) {
+                        results.push({ key, value });
+                    }
+                }
+
+                // Tampilkan hasil pencarian
+                if (results.length > 0) {
+                    const chunkedResults = chunkArray(results, 4); // Bagi hasil menjadi 4 kolom
+                    let html = '';
+
+                    chunkedResults.forEach((column) => {
+                        html += '<div class="col-md-3 mb-4"><ul class="list-group">';
+                        column.forEach((item) => {
+                            // Highlight kata kunci yang ditemukan
+                            const highlightedKey = highlightText(item.key, query);
+                            const highlightedValue = highlightText(item.value, query);
+
+                            html += `
+                                <li class="list-group-item d-flex justify-content-between align-items-center dictionary-item">
+                                    <span class="dictionary-text">
+                                        <strong type="original">${highlightedKey}</strong> → <strong type="convert">${highlightedValue}</strong>
+                                    </span>
+                                    <form method="post" style="display:inline;">
+                                        <input type="hidden" name="remove_from_dictionary" value="${item.key}">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            `;
+                        });
+                        html += '</ul></div>';
+                    });
+
+                    $searchResults.html(`${html}`);
+                } else {
+                    $searchResults.html('<div class="col-md-12"><ul class="list-group "><div class="alert alert-warning text-center">No results found.</div></div>');
+                }
+            } else {
+                // Jika tidak ada query, sembunyikan hasil pencarian
+                $searchResults.hide();
+
+                // Kembalikan tampilan dictionary dan pagination sesuai status expand
+                if (isDictionaryExpanded) {
+                    $originalGrid.show();
+                    $paginationControls.show();
                 }
             }
-
-            // Tampilkan hasil pencarian
-            if (results.length > 0) {
-                const chunkedResults = chunkArray(results, 4); // Bagi hasil menjadi 4 kolom
-                let html = '';
-
-                chunkedResults.forEach((column) => {
-                    html += '<div class="col-md-3 mb-4"><ul class="list-group">';
-                    column.forEach((item) => {
-                        // Highlight kata kunci yang ditemukan
-                        const highlightedKey = highlightText(item.key, query);
-                        const highlightedValue = highlightText(item.value, query);
-
-                        html += `
-                            <li class="list-group-item d-flex justify-content-between align-items-center dictionary-item">
-                                <span class="dictionary-text">
-                                    <strong type="original">${highlightedKey}</strong> → <strong type="convert">${highlightedValue}</strong>
-                                </span>
-                                <form method="post" style="display:inline;">
-                                    <input type="hidden" name="remove_from_dictionary" value="${item.key}">
-                                    <button type="submit" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </form>
-                            </li>
-                        `;
-                    });
-                    html += '</ul></div>';
-                });
-
-                $searchResults.html(`${html}`);
-            } else {
-                $searchResults.html('<div class="col-md-12"><ul class="list-group "><div class="alert alert-warning text-center">No results found.</div></div>');
-            }
-        } else {
-            // Jika tidak ada query, sembunyikan hasil pencarian
-            $searchResults.hide();
-
-            // Kembalikan tampilan dictionary dan pagination sesuai status expand
-            if (isDictionaryExpanded) {
-                $originalGrid.show();
-                $paginationControls.show();
-            }
-        }
-    });
+        });
 
         // Clear search functionality
         $('#clearSearch').click(function() {
