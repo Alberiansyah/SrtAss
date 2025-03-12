@@ -19,7 +19,9 @@
         <!-- Only show search input and results if the dictionary has words -->
         <div class="row justify-content-center mb-4">
             <div class="col-md-6">
-                <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Find a word...">
+                <div class="input-group">
+                    <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Find a word...">
+                </div>
             </div>
         </div>
 
@@ -32,12 +34,12 @@
                         <?php foreach ($column as $key => $value): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center dictionary-item">
                                 <span class="dictionary-text">
-                                    <?= htmlspecialchars($key) ?> => <?= htmlspecialchars($value) ?>
+                                <strong type="original"><?= htmlspecialchars($key) ?></strong> → <strong type="convert"><?= htmlspecialchars($value) ?></strong>
                                 </span>
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="remove_from_dictionary" value="<?= htmlspecialchars($key) ?>">
                                     <button type="submit" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-trash-alt"></i> Remove
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
                             </li>
