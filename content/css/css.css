@@ -191,8 +191,26 @@ body {
 }
 
 .dictionary-text strong[type="original"] {
-    color: #ff0000;
+    color: #188754 !important;
 }
 .dictionary-text strong[type="convert"] {
+    color: #0C5ED7 !important;
+}
+
+/* Pagination Styles */
+.pagination {
+    margin-top: 20px;
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.page-link {
     color: #007bff;
+}
+
+.page-link:hover {
+    color: #0056b3;
 }

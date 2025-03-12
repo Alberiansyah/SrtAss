@@ -26,6 +26,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="content/js/js.js?v=<?= time() ?>"></script>
+
 </head>
 
 <body>
@@ -63,5 +64,9 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     <?php endif; ?>
     </div>
 </body>
+<script>
+    // Simpan seluruh dictionary di JavaScript
+    const fullDictionary = <?= json_encode($dictionary) ?>;
+</script>
 
 </html>
