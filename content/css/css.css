@@ -87,15 +87,6 @@ body {
 }
 
 /* =======================================
-   Form Elements
-   ======================================= */
-.form-select,
-.form-control {
-    border-radius: 5px;
-    padding: 10px;
-}
-
-/* =======================================
    Search Input & Clear Button
    ======================================= */
 #searchInput {
@@ -213,4 +204,42 @@ body {
 
 .page-link:hover {
     color: #0056b3;
+}
+
+/* Custom Tab Menu dengan efek underline */
+.custom-tabs {
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.custom-tabs .nav-link {
+    border: none;
+    border-radius: 0;
+    margin-right: 5px;
+    background: transparent;
+    color: #555;
+    font-size: 16px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.custom-tabs .nav-link:hover {
+    color: #0C5ED7;
+}
+
+.custom-tabs .nav-link.active {
+    color: #0C5ED7;
+}
+
+.custom-tabs .nav-link.active::after {
+    content: "";
+    display: block;
+    height: 3px;
+    background: #0C5ED7;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    border-radius: 3px;
 }

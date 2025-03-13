@@ -117,28 +117,25 @@ $(document).ready(function() {
        Editable Text Field
        ======================================= */
     // Tampilkan field input saat double-click pada tampilan teks
+    var updateUrl = $('body').hasClass('batchConversion') ? 'update_batch_subtitle.php' : 'update_subtitle.php';
     $('.text-display').on('dblclick', function() {
         const $editable = $(this).closest('.editable');
         $editable.find('.text-display').hide();
         $editable.find('.text-edit').show().focus();
     });
 
-    // Simpan perubahan saat field input kehilangan fokus (blur)
     $('.text-edit').on('blur', function() {
         const $editable = $(this).closest('.editable');
         const newText = $(this).val();
-        const index = $editable.data('index');
-
-        // Kirim permintaan AJAX untuk menyimpan perubahan
+        const index = $editable.data('index'); // Format: "fileIndex-subtitleIndex" untuk batch, dan bisa jadi angka untuk single
         $.ajax({
-            url: 'update_subtitle.php',
+            url: updateUrl,
             method: 'POST',
             data: {
                 index: index,
                 text: newText
             },
             success: function(response) {
-                // Perbarui tampilan teks dengan response dari server
                 $editable.find('.text-display').html(response).show();
                 $editable.find('.text-edit').hide();
                 console.log('Text updated successfully!');
@@ -147,6 +144,12 @@ $(document).ready(function() {
                 console.log('Failed to update text.');
             }
         });
+    });
+
+    $('.text-edit').on('keypress', function(e) {
+        if (e.which === 13) { // Jika tombol Enter ditekan
+            $(this).blur();
+        }
     });
 
     // Tangani penekanan tombol Enter untuk menyimpan perubahan
@@ -193,6 +196,28 @@ $(document).ready(function() {
                 console.log('Failed to load page.');
             }
         });
+    });
+
+    /* =======================================
+       Download Batch Form
+       ======================================= */
+    // Event listener untuk form download batch
+    $('form.download-batch').on('submit', function(e) {
+        let $form = $(this);
+        let action = $form.attr('action');
+        
+        // Buat nilai acak (timestamp + random) agar selalu unik
+        let randomValue = new Date().getTime() + '_' + Math.floor(Math.random() * 1000000);
+
+        // Cek apakah action sudah mengandung '?'
+        if (action.indexOf('?') === -1) {
+            action += '?rand=' + randomValue;
+        } else {
+            action += '&rand=' + randomValue;
+        }
+
+        // Set action baru
+        $form.attr('action', action);
     });
 
 });
