@@ -4,7 +4,7 @@ session_start();
 require __DIR__ . '/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    handlePostRequest();
+    handleSingleRequest();
 }
 
 $subtitles = $_SESSION['subtitles'] ?? [];
@@ -42,7 +42,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
                         <a class="nav-link text-white" href="index.php">Upload Subtitle</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="batch_conversion.php">Batch Conversion</a>
+                        <a class="nav-link text-white" href="display-batch.php">Batch Conversion</a>
                     </li>
                 </ul>
             </div>
@@ -56,10 +56,10 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         <?php endif; ?>
     </div>
     <?php if (!empty($subtitles)): ?>
-        <?php require __DIR__ . '/includes/dictionary_form.php'; ?>
-        <?php require __DIR__ . '/includes/download_form.php'; ?>
-        <?php require __DIR__ . '/includes/dictionary_list.php'; ?>
-        <?php require __DIR__ . '/includes/subtitle_table.php'; ?>
+        <?php require __DIR__ . '/includes/dictionary-form.php'; ?>
+        <?php require __DIR__ . '/includes/download-form.php'; ?>
+        <?php require __DIR__ . '/includes/dictionary-list.php'; ?>
+        <?php require __DIR__ . '/includes/subtitle-table.php'; ?>
     <?php else: ?>
         <div class="container">
             <p class="alert alert-warning text-center">No subtitle data found.</p>

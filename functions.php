@@ -1,5 +1,5 @@
 <?php
-function handlePostRequest()
+function handleSingleRequest()
 {
     if (isset($_FILES['subtitle_file']) && $_FILES['subtitle_file']['error'] == UPLOAD_ERR_OK) {
         $fileName = $_FILES['subtitle_file']['name'];
@@ -71,6 +71,129 @@ function handlePostRequest()
         header('Content-Length: ' . strlen($content));
         echo $content;
         exit;
+    }
+
+    if (isset($_POST['clear_session'])) {
+        $_SESSION = [];
+        session_unset();
+        session_destroy();
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
+
+function handleBatchRequest()
+{
+    // Proses unggahan banyak file
+    if (isset($_FILES['subtitle_files'])) {
+        $batchFiles = [];
+        foreach ($_FILES['subtitle_files']['error'] as $index => $error) {
+            if ($error == UPLOAD_ERR_OK) {
+                $fileName = $_FILES['subtitle_files']['name'][$index];
+                $tmpName = $_FILES['subtitle_files']['tmp_name'][$index];
+                $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                $fileContent = file_get_contents($tmpName);
+
+                if ($extension == 'srt') {
+                    $subtitles = parseSrt($fileContent);
+                    $batchFiles[] = [
+                        'uploaded_file_name' => $fileName,
+                        'file_name'          => pathinfo($fileName, PATHINFO_FILENAME),
+                        'extension'          => $extension,
+                        'subtitles'          => $subtitles,
+                        'styles'             => [],
+                        'format'             => 'srt'
+                    ];
+                } elseif ($extension == 'ass') {
+                    $parsedAss = parseAss($fileContent);
+                    $batchFiles[] = [
+                        'uploaded_file_name' => $fileName,
+                        'file_name'          => pathinfo($fileName, PATHINFO_FILENAME),
+                        'extension'          => $extension,
+                        'subtitles'          => $parsedAss['subtitles'],
+                        'styles'             => $parsedAss['styles'],
+                        'scriptInfo'         => $parsedAss['scriptInfo'],
+                        'projectGarbage'     => $parsedAss['projectGarbage'],
+                        'format'             => 'ass'
+                    ];
+                }
+            }
+        }
+        $_SESSION['batch_files'] = $batchFiles;
+    }
+
+    // Proses download batch (mengemas file-file hasil konversi ke ZIP)
+    if (isset($_POST['batch_download'])) {
+        $selectedFormat = $_POST['format']; // 'srt' atau 'ass'
+        $subtitleType = $_POST['subtitle_type'] ?? 'anime';
+        $batchFiles = $_SESSION['batch_files'] ?? [];
+        if (!empty($batchFiles)) {
+            $zip = new ZipArchive();
+
+            // Nama file zip yang benar-benar unik
+            $zipFileName = 'batch_converted_' . time() . '.zip';
+
+            // Buat file temporer
+            $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
+            if ($zip->open($tmpFile, ZipArchive::CREATE) === TRUE) {
+                foreach ($batchFiles as $file) {
+                    $originalFileName = $file['file_name'];
+                    $subtitles = $file['subtitles'];
+                    if ($selectedFormat === 'srt') {
+                        $content = convertToSrt($subtitles);
+                        $ext = 'srt';
+                    } elseif ($selectedFormat === 'ass') {
+                        $styles = $file['styles'] ?? [];
+                        $scriptInfo = $file['scriptInfo'] ?? '';
+                        $projectGarbage = $file['projectGarbage'] ?? '';
+                        $content = convertToAss($subtitles, $styles, $scriptInfo, $projectGarbage, $subtitleType);
+                        $ext = 'ass';
+                    }
+                    $fileName = $originalFileName . '.' . $ext;
+                    $zip->addFromString($fileName, $content);
+                }
+                $zip->close();
+
+                // Pastikan belum ada output HTML sebelum header
+                header('Content-Type: application/zip');
+                header('Content-Disposition: attachment; filename="' . $zipFileName . '"');
+                header('Content-Length: ' . filesize($tmpFile));
+                readfile($tmpFile);
+                unlink($tmpFile);
+                exit;
+            }
+        }
+    }
+
+    // Pastikan kamus default
+    if (!isset($_SESSION['dictionary'])) {
+        $_SESSION['dictionary'] = loadDictionaryFromJson();
+    }
+
+    // Proses penambahan/menghapus data kamus
+    if (isset($_POST['add_to_dictionary'])) {
+        $key = trim($_POST['key']);
+        $value = trim($_POST['value']);
+        if (!empty($key) && !empty($value)) {
+            $_SESSION['dictionary'][$key] = $value;
+            saveDictionaryToJson($_SESSION['dictionary']);
+        }
+    }
+
+    if (isset($_POST['remove_from_dictionary'])) {
+        $key_to_remove = $_POST['remove_from_dictionary'];
+        if (array_key_exists($key_to_remove, $_SESSION['dictionary'])) {
+            $value_to_restore = $_SESSION['dictionary'][$key_to_remove];
+            if (isset($_SESSION['batch_files'])) {
+                foreach ($_SESSION['batch_files'] as &$file) {
+                    foreach ($file['subtitles'] as &$subtitle) {
+                        $subtitle['text'] = str_replace($value_to_restore, $key_to_remove, $subtitle['text']);
+                    }
+                }
+            }
+            unset($_SESSION['dictionary'][$key_to_remove]);
+            saveDictionaryToJson($_SESSION['dictionary']);
+        }
     }
 
     if (isset($_POST['clear_session'])) {

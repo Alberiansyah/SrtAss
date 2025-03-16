@@ -117,7 +117,7 @@ $(document).ready(function() {
        Editable Text Field
        ======================================= */
     // Tampilkan field input saat double-click pada tampilan teks
-    var updateUrl = $('body').hasClass('batchConversion') ? 'update_batch_subtitle.php' : 'update_subtitle.php';
+    var updateUrl = $('body').hasClass('batchConversion') ? 'update-subtitle-batch.php' : 'update-subtitle.php';
     $('.text-display').on('dblclick', function() {
         const $editable = $(this).closest('.editable');
         $editable.find('.text-display').hide();
