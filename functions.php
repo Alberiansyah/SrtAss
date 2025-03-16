@@ -77,7 +77,7 @@ function handleSingleRequest()
         $_SESSION = [];
         session_unset();
         session_destroy();
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: index.php");
         exit;
     }
 }
@@ -200,7 +200,7 @@ function handleBatchRequest()
         $_SESSION = [];
         session_unset();
         session_destroy();
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: index.php");
         exit;
     }
 }

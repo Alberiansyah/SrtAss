@@ -46,40 +46,45 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         </div>
     </nav>
 
-    <div class="text-center mt-3 mb-4">
-        <h1><span class="badge bg-primary">Batch Subtitle Conversion</span></h1>
-    </div>
-    <!-- Tampilan kamus dan download form (sama seperti display.php) -->
-    <?php include __DIR__ . '/includes/dictionary-form.php'; ?>
-    <?php include __DIR__ . '/includes/download-form-batch.php'; ?>
-    <?php include __DIR__ . '/includes/dictionary-list.php'; ?>
+    <?php if (!empty($batchFiles)): ?>
+        <div class="text-center mt-3 mb-4">
+            <h1><span class="badge bg-primary">Batch Subtitle Conversion</span></h1>
+        </div>
+        <!-- Tampilan kamus dan download form (sama seperti display.php) -->
+        <?php include __DIR__ . '/includes/dictionary-form.php'; ?>
+        <?php include __DIR__ . '/includes/download-form-batch.php'; ?>
+        <?php include __DIR__ . '/includes/dictionary-list.php'; ?>
 
-    <!-- Tab untuk setiap file -->
-    <ul class="nav custom-tabs justify-content-center" id="batchTabs" role="tablist">
-        <?php foreach ($batchFiles as $fileIndex => $file): ?>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link <?= $fileIndex === 0 ? 'active' : '' ?>" id="custom-tab-<?= $fileIndex ?>" data-bs-toggle="tab" data-bs-target="#custom-file-<?= $fileIndex ?>" type="button" role="tab" aria-controls="custom-file-<?= $fileIndex ?>" aria-selected="<?= $fileIndex === 0 ? 'true' : 'false' ?>">
-                    <?= htmlspecialchars($file['uploaded_file_name']) ?>
-                </button>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-    <div class="tab-content custom-tab-content">
-        <?php foreach ($batchFiles as $fileIndex => $file): ?>
-            <div class="tab-pane fade <?= $fileIndex === 0 ? 'show active' : '' ?>" id="custom-file-<?= $fileIndex ?>" role="tabpanel" aria-labelledby="custom-tab-<?= $fileIndex ?>">
-                <?php
-                $currentFileIndex = $fileIndex;
-                $subtitles = $file['subtitles'];
-                include __DIR__ . '/includes/subtitle-table.php';
-                ?>
-            </div>
-        <?php endforeach; ?>
-    </div>
-
-    <!-- Kirim data kamus ke JavaScript -->
-    <script>
-        const fullDictionary = <?= json_encode($dictionary) ?>;
-    </script>
+        <!-- Tab untuk setiap file -->
+        <ul class="nav custom-tabs justify-content-center" id="batchTabs" role="tablist">
+            <?php foreach ($batchFiles as $fileIndex => $file): ?>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link <?= $fileIndex === 0 ? 'active' : '' ?>" id="custom-tab-<?= $fileIndex ?>" data-bs-toggle="tab" data-bs-target="#custom-file-<?= $fileIndex ?>" type="button" role="tab" aria-controls="custom-file-<?= $fileIndex ?>" aria-selected="<?= $fileIndex === 0 ? 'true' : 'false' ?>">
+                        <?= htmlspecialchars($file['uploaded_file_name']) ?>
+                    </button>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <div class="tab-content custom-tab-content">
+            <?php foreach ($batchFiles as $fileIndex => $file): ?>
+                <div class="tab-pane fade <?= $fileIndex === 0 ? 'show active' : '' ?>" id="custom-file-<?= $fileIndex ?>" role="tabpanel" aria-labelledby="custom-tab-<?= $fileIndex ?>">
+                    <?php
+                    $currentFileIndex = $fileIndex;
+                    $subtitles = $file['subtitles'];
+                    include __DIR__ . '/includes/subtitle-table.php';
+                    ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <div class="container mt-4">
+            <p class="alert alert-warning text-center">No subtitle data found.</p>
+        </div>
+    <?php endif; ?>
 </body>
+<!-- Kirim data kamus ke JavaScript -->
+<script>
+    const fullDictionary = <?= json_encode($dictionary) ?>;
+</script>
 
 </html>

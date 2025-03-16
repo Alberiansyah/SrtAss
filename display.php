@@ -41,9 +41,6 @@ $subtitles = $_SESSION['subtitles'] ?? [];
                     <li class="nav-item">
                         <a class="nav-link text-white" href="index.php">Upload Subtitle</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="display-batch.php">Batch Conversion</a>
-                    </li>
                 </ul>
             </div>
         </div>
