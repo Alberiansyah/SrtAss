@@ -182,10 +182,10 @@ body {
 }
 
 .dictionary-text strong[type="original"] {
-    color: #188754 !important;
+    color: #0C5ED7 !important;
 }
 .dictionary-text strong[type="convert"] {
-    color: #0C5ED7 !important;
+    color: #188754 !important;
 }
 
 /* Pagination Styles */
