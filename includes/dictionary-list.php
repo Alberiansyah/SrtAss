@@ -49,7 +49,7 @@
                         <?php foreach ($column as $key => $value): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-center dictionary-item">
                                 <span class="dictionary-text">
-                                    <strong type="original"><?= htmlspecialchars($key) ?></strong> → <strong type="convert"><?= htmlspecialchars($value) ?></strong>
+                                    <strong type="original"><?= htmlspecialchars($key) ?></strong>→<strong type="convert"><?= htmlspecialchars($value) ?></strong>
                                 </span>
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="remove_from_dictionary" value="<?= htmlspecialchars($key) ?>">

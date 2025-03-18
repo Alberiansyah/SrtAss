@@ -146,12 +146,6 @@ $(document).ready(function() {
         });
     });
 
-    $('.text-edit').on('keypress', function(e) {
-        if (e.which === 13) { // Jika tombol Enter ditekan
-            $(this).blur();
-        }
-    });
-
     // Tangani penekanan tombol Enter untuk menyimpan perubahan
     $('.text-edit').on('keypress', function(e) {
         if (e.which === 13) { // Jika tombol Enter ditekan
