@@ -118,24 +118,30 @@ $(document).ready(function() {
        ======================================= */
     // Tampilkan field input saat double-click pada tampilan teks
     var updateUrl = $('body').hasClass('batchConversion') ? 'update-subtitle-batch.php' : 'update-subtitle.php';
+    
+    // Handle double-click untuk menampilkan input edit
     $('.text-display').on('dblclick', function() {
         const $editable = $(this).closest('.editable');
+        const originalText = $(this).data('original-text'); // Use the original text stored in data attribute
         $editable.find('.text-display').hide();
-        $editable.find('.text-edit').show().focus();
+        $editable.find('.text-edit').val(originalText).show().focus(); // Set value to original text
     });
-
+    
+    // Handle blur untuk menyimpan perubahan
     $('.text-edit').on('blur', function() {
         const $editable = $(this).closest('.editable');
-        const newText = $(this).val();
-        const index = $editable.data('index'); // Format: "fileIndex-subtitleIndex" untuk batch, dan bisa jadi angka untuk single
+        const newText = $(this).val(); // Ambil teks yang diubah dari input
+        const index = $editable.data('index'); // Format: "fileIndex-subtitleIndex" untuk batch, atau angka untuk single
+    
         $.ajax({
             url: updateUrl,
             method: 'POST',
             data: {
                 index: index,
-                text: newText
+                text: newText // Kirim teks yang diubah ke server
             },
             success: function(response) {
+                // Perbarui tampilan dengan teks yang sudah di-highlight dari server
                 $editable.find('.text-display').html(response).show();
                 $editable.find('.text-edit').hide();
                 console.log('Text updated successfully!');
@@ -145,8 +151,8 @@ $(document).ready(function() {
             }
         });
     });
-
-    // Tangani penekanan tombol Enter untuk menyimpan perubahan
+    
+    // Handle tombol Enter untuk menyimpan perubahan
     $('.text-edit').on('keypress', function(e) {
         if (e.which === 13) { // Jika tombol Enter ditekan
             $(this).blur(); // Memicu event blur untuk menyimpan perubahan
