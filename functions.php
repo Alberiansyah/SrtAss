@@ -438,16 +438,20 @@ function convertToAss($subtitles, $styles = [], $scriptInfo = '', $projectGarbag
 
     $ass .= "[V4+ Styles]\n";
     $ass .= "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n";
-    if (!empty($styles)) {
-        foreach ($styles as $style) {
-            $ass .= $style . "\n";
-        }
-    } else {
-        // Default style if no styles are present
-        if ($subtitleType === 'anime') {
-            $ass .= "Style: Default,GosmickSans,75,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,2,15,15,55,1\n";
-        } elseif ($subtitleType === 'movie') {
-            $ass .= "Style: Default,Panefresco 800wt,50,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,1.5,2,15,15,55,1\n";
+    // Default style if no styles are present
+    if ($subtitleType === 'anime') {
+        $ass .= "Style: Default,GosmickSans,75,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,2,15,15,55,1\n";
+        $ass .= "Style: Atas,GosmickSans,75,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,8,15,15,55,1\n";
+        $ass .= "Style: Red PK,GosmickSans,75,&H000000DD,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,8,15,15,55,1\n";
+        $ass .= "Style: Signs,GosmickSans,75,&H00323232,&H000000FF,&H00EEEEEE,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,5,10,10,55,1\n";
+        $ass .= "Style: Outline,GosmickSans,75,&H00FFFFFF,&H000000FF,&H000000D7,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,2,10,10,55,1\n";
+    } elseif ($subtitleType === 'movie') {
+        $ass .= "Style: Default,Panefresco 800wt,50,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,1.5,2,15,15,55,1\n";
+    } elseif ($subtitleType === 'none') {
+        if (!empty($styles)) {
+            foreach ($styles as $style) {
+                $ass .= $style . "\n";
+            }
         }
     }
 
@@ -459,7 +463,7 @@ function convertToAss($subtitles, $styles = [], $scriptInfo = '', $projectGarbag
         $style = $subtitle['style'] ?? 'Default';
         $text = replaceWords($subtitle['text'], false); // No highlight applied
 
-        // Replace <i> with {\i1} and </i> with {\i}
+        // Replace <i> with {\i1} and </i> with {\i}git
         $text = preg_replace('/<i>(.*?)<\/i>/', '{\i1}$1{\i}', $text);
 
         // Replace newlines with \N and ensure text stays on one line
