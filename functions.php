@@ -341,21 +341,26 @@ function parseAss($content)
 function replaceWords($text, $applyHighlight = true)
 {
     if (isset($_SESSION['dictionary'])) {
-        // Urutkan kamus berdasarkan panjang kata kunci
+        // Urutkan kamus berdasarkan panjang kata kunci (terpanjang dulu)
         uksort($_SESSION['dictionary'], function ($a, $b) {
             return strlen($b) - strlen($a);
         });
 
         // Ganti kata berdasarkan kamus
         foreach ($_SESSION['dictionary'] as $key => $value) {
-            $pattern = '/\b' . preg_quote($key, '/') . '\b/';
-            if ($applyHighlight) {
-                // Tambahkan highlight jika diperlukan
-                $text = preg_replace($pattern, '<span style="background-color: #00ff33;">' . $value . '</span>', $text);
-            } else {
-                // Ganti tanpa highlight
-                $text = preg_replace($pattern, $value, $text);
-            }
+            // Pola untuk kata biasa
+            $text = preg_replace(
+                '/\b' . preg_quote($key, '/') . '\b/',
+                $applyHighlight ? '<span style="background-color: #00ff33;">' . $value . '</span>' : $value,
+                $text
+            );
+
+            // Pola untuk kasus \n atau \N di awal kata (pertahankan newline)
+            $text = preg_replace(
+                '/(\\\\[nN])' . preg_quote($key, '/') . '\b/',
+                '$1' . ($applyHighlight ? '<span style="background-color: #00ff33;">' . $value . '</span>' : $value),
+                $text
+            );
         }
     }
     return $text;
@@ -463,7 +468,7 @@ function convertToAss($subtitles, $styles = [], $scriptInfo = '', $projectGarbag
         $style = $subtitle['style'] ?? 'Default';
         $text = replaceWords($subtitle['text'], false); // No highlight applied
 
-        // Replace <i> with {\i1} and </i> with {\i}git
+        // Replace <i> with {\i1} and </i> with {\i}
         $text = preg_replace('/<i>(.*?)<\/i>/', '{\i1}$1{\i}', $text);
 
         // Replace newlines with \N and ensure text stays on one line
