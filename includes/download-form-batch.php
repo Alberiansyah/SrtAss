@@ -15,6 +15,10 @@
                         <input type="radio" class="form-check-input" name="subtitle_type" value="movie" id="movie">
                         <label class="form-check-label" for="movie">Movie</label>
                     </div>
+                    <div class="form-check form-check-inline">
+                        <input type="radio" class="form-check-input" name="subtitle_type" value="none" id="none">
+                        <label class="form-check-label" for="none">None</label>
+                    </div>
                 </div>
                 <input type="hidden" name="format" value="ass">
                 <button type="submit" name="batch_download" class="btn btn-primary btn-lg w-100">
