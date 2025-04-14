@@ -1,4 +1,9 @@
 <?php
+require_once 'vendor/autoload.php'; // Tambahkan di awal file
+
+define('ENABLE_WORD_HIGHLIGHT', false); // Kontrol highlight
+define('ENABLE_NON_INDONESIAN_WORD_LOGGING', false); // Kontrol logging
+
 function handleSingleRequest()
 {
     if (isset($_FILES['subtitle_file']) && $_FILES['subtitle_file']['error'] == UPLOAD_ERR_OK) {
@@ -120,6 +125,11 @@ function handleBatchRequest()
             }
         }
         $_SESSION['batch_files'] = $batchFiles;
+
+        foreach ($_SESSION['batch_files'] as &$file) {
+            $file['log_file'] = 'content/logs/' . preg_replace('/[^a-zA-Z0-9_-]/', ' ', $file['file_name']) . '.log';
+        }
+        unset($file); // Hapus reference
     }
 
     // Proses download batch (mengemas file-file hasil konversi ke ZIP)
@@ -507,4 +517,181 @@ function convertTimeToAss($time)
     }
     // Jika sudah dalam format ASS, kembalikan langsung
     return $time;
+}
+
+function loadIndonesianDictionary()
+{
+    $filePath = 'content/json/id-words.txt';
+
+    // Jika file tidak ditemukan, return null khusus
+    if (!file_exists($filePath)) {
+        error_log("Kamus bahasa Indonesia tidak ditemukan di: " . realpath(dirname($filePath)));
+        return null; // Kembalikan null bukan array kosong
+    }
+
+    $words = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    if (empty($words)) {
+        error_log("Kamus bahasa Indonesia kosong atau tidak valid");
+        return null;
+    }
+
+    return array_flip($words);
+}
+
+function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null)
+{
+    // Jika highlight dinonaktifkan, kembalikan teks asli
+    if (defined('ENABLE_WORD_HIGHLIGHT') && !ENABLE_WORD_HIGHLIGHT) {
+        return htmlspecialchars($text);
+    }
+
+    // Panggil fungsi logging jika lineNumber tersedia DAN logging enabled
+    if ($lineNumber !== null && defined('ENABLE_NON_INDONESIAN_WORD_LOGGING') && ENABLE_NON_INDONESIAN_WORD_LOGGING) {
+        logIndonesiaWords($text, $lineNumber, $logFile);
+    }
+
+    static $stemmer = null;
+    static $indonesianWords = null;
+    static $dictionaryExists = false;
+
+    if ($stemmer === null) {
+        $stemmer = new \Sastrawi\Stemmer\StemmerFactory();
+        $stemmer = $stemmer->createStemmer();
+        $indonesianWords = loadIndonesianDictionary();
+        $dictionaryExists = ($indonesianWords !== null);
+    }
+
+    // Jika kamus tidak ada, kembalikan teks asli tanpa highlight
+    if (!$dictionaryExists) {
+        return htmlspecialchars($text);
+    }
+
+    $specialCharsPattern = '/(\\\\[NnHh]|\\R|\{\\.*?\})/';
+    $parts = preg_split($specialCharsPattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+    $result = '';
+
+    foreach ($parts as $part) {
+        if (preg_match($specialCharsPattern, $part)) {
+            $result .= $part;
+            continue;
+        }
+
+        $tokens = preg_split('/([^\p{L}\p{N}]+)/u', $part, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        foreach ($tokens as $token) {
+            if (empty(trim($token))) {
+                $result .= $token;
+                continue;
+            }
+
+            if (preg_match('/^\p{N}+$/u', $token)) {
+                $result .= $token;
+                continue;
+            }
+
+            if (preg_match('/^\p{L}+$/u', $token)) {
+                $lowerToken = mb_strtolower($token, 'UTF-8');
+                $stemmed = $stemmer->stem($lowerToken);
+
+                if (!isset($indonesianWords[$stemmed]) && !isset($indonesianWords[$lowerToken])) {
+                    $result .= '<span class="non-indonesian-word" title="Kata tidak dikenali">' .
+                        htmlspecialchars($token) . '</span>';
+                } else {
+                    $result .= htmlspecialchars($token);
+                }
+            } else {
+                $result .= htmlspecialchars($token);
+            }
+        }
+    }
+
+    return $result;
+}
+
+function logIndonesiaWords($text, $lineNumber, $logFile = null)
+{
+    // Jika logging disabled ATAU highlight disabled, langsung return
+    if ((defined('ENABLE_NON_INDONESIAN_WORD_LOGGING') && !ENABLE_NON_INDONESIAN_WORD_LOGGING) ||
+        (defined('ENABLE_WORD_HIGHLIGHT') && !ENABLE_WORD_HIGHLIGHT)
+    ) {
+        return;
+    }
+
+    static $stemmer = null;
+    static $indonesianWords = null;
+    static $dictionaryExists = false;
+    static $loggedEntries = [];
+
+    if ($stemmer === null) {
+        $stemmer = new \Sastrawi\Stemmer\StemmerFactory();
+        $stemmer = $stemmer->createStemmer();
+        $indonesianWords = loadIndonesianDictionary();
+        $dictionaryExists = ($indonesianWords !== null);
+    }
+
+    // Jika kamus tidak ada, jangan lakukan logging
+    if (!$dictionaryExists) {
+        return;
+    }
+
+    // Jika tidak ada nama file log spesifik, gunakan default
+    if ($logFile === null) {
+        $fileName = $_SESSION['file_name'] ?? 'unknown';
+        $logFile = 'content/logs/' . preg_replace('/[^a-zA-Z0-9_-]/', ' ', $fileName) . '.log';
+    }
+
+    // Baca log yang sudah ada
+    if (file_exists($logFile)) {
+        $loggedEntries = array_flip(file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+    }
+
+    $specialCharsPattern = '/(\\\\[NnHh]|\\R|\{\\.*?\})/';
+    $parts = preg_split($specialCharsPattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+    $newEntries = [];
+
+    foreach ($parts as $part) {
+        if (preg_match($specialCharsPattern, $part)) {
+            continue;
+        }
+
+        $tokens = preg_split('/([^\p{L}\p{N}]+)/u', $part, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        foreach ($tokens as $token) {
+            if (empty(trim($token)) || preg_match('/^\p{N}+$/u', $token)) {
+                continue;
+            }
+
+            if (preg_match('/^\p{L}+$/u', $token)) {
+                $stemmed = $stemmer->stem(mb_strtolower($token, 'UTF-8'));
+
+                if (
+                    !isset($indonesianWords[$stemmed]) &&
+                    !isset($indonesianWords[mb_strtolower($token, 'UTF-8')])
+                ) {
+
+                    $entry = "[LINE:$lineNumber] $token";
+                    if (!isset($loggedEntries[$entry])) {
+                        $newEntries[$entry] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Simpan entri baru ke log file
+    if (!empty($newEntries)) {
+        $logDir = 'content/logs/';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0777, true);
+        }
+
+        file_put_contents(
+            $logFile,
+            implode("\n", array_keys($newEntries)) . "\n",
+            FILE_APPEND
+        );
+    }
 }

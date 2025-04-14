@@ -243,3 +243,8 @@ body {
     bottom: -2px;
     border-radius: 3px;
 }
+
+.non-indonesian-word {
+    background-color: #ff9999;
+    border-bottom: 1px dashed #ff0000;
+}

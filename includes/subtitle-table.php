@@ -10,29 +10,39 @@
             </tr>
         </thead>
         <tbody>
-            <?php $no = 1;
+            <?php
+            $currentFileIndex = $currentFileIndex ?? null;
+            $logFile = null;
+
+            // Jika dalam mode batch, dapatkan nama file log spesifik
+            if (isset($currentFileIndex) && isset($_SESSION['batch_files'][$currentFileIndex]['log_file'])) {
+                $logFile = $_SESSION['batch_files'][$currentFileIndex]['log_file'];
+            }
+
+            $no = 1;
             foreach ($subtitles as $subtitleIndex => $subtitle): ?>
                 <tr>
-                    <td><?= $no++ ?></td>
+                    <td><?= $no ?></td>
                     <td><?= convertTimeToAss($subtitle['start']); ?></td>
                     <td><?= convertTimeToAss($subtitle['end']); ?></td>
-                    <td><?= htmlspecialchars($subtitle['text']); ?></td>
+                    <td>
+                        <?php
+                        // Panggil fungsi highlight dengan parameter log file spesifik
+                        echo highlightIndonesiaWords($subtitle['text'], $no, $logFile);
+                        ?>
+                    </td>
                     <td>
                         <?php if (isset($currentFileIndex)) : ?>
                             <div class="editable" data-index="<?= $currentFileIndex . '-' . $subtitleIndex ?>">
                             <?php else: ?>
                                 <div class="editable" data-index="<?= $subtitleIndex ?>">
                                 <?php endif; ?>
-                                <?php
-                                $modifiedText = replaceWords($subtitle['text'], true); // Terapkan highlight
-                                ?>
-                                <span class="text-display" data-original-text="<?= htmlspecialchars($subtitle['text']) ?>">
-                                    <?= $modifiedText ?>
-                                </span>
-                                <input type="text" class="text-edit" style="display: none;" value="<?= htmlspecialchars(strip_tags($modifiedText)) ?>">
+                                <?= replaceWords($subtitle['text'], true) ?>
+                                <input type="text" class="text-edit" style="display: none;" value="<?= htmlspecialchars(strip_tags(replaceWords($subtitle['text'], false))) ?>">
                                 </div>
                     </td>
                 </tr>
+                <?php $no++; ?>
             <?php endforeach; ?>
         </tbody>
     </table>
