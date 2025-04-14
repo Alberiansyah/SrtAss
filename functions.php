@@ -127,7 +127,7 @@ function handleBatchRequest()
         $_SESSION['batch_files'] = $batchFiles;
 
         foreach ($_SESSION['batch_files'] as &$file) {
-            $file['log_file'] = 'content/logs/' . preg_replace('/[^a-zA-Z0-9_-]/', ' ', $file['file_name']) . '.log';
+            $file['log_file'] = 'content/logs/' . preg_replace(['/[^\w\s\-+\[\]]/', '/\s+\./'], [' ', '.'], $file['file_name']) . '.log';
         }
         unset($file); // Hapus reference
     }
@@ -639,7 +639,7 @@ function logIndonesiaWords($text, $lineNumber, $logFile = null)
     // Jika tidak ada nama file log spesifik, gunakan default
     if ($logFile === null) {
         $fileName = $_SESSION['file_name'] ?? 'unknown';
-        $logFile = 'content/logs/' . preg_replace('/[^a-zA-Z0-9_-]/', ' ', $fileName) . '.log';
+        $logFile = 'content/logs/' . preg_replace(['/[^\w\s\-+\[\]]/', '/\s+\./'], [' ', '.'], $fileName) . '.log';
     }
 
     // Baca log yang sudah ada

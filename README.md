@@ -14,7 +14,7 @@ Recent updates have introduced batch processing, non-Indonesian word logging, an
 - **Highlighting Word Replacement**: Replace words in the subtitle file using the dictionary, and apply optional highlights to the replacements.
 - **Batch File Processing**: Upload and process multiple subtitle files in one go, with batch downloading options available. Files are processed in parallel and saved as either `SRT` or `ASS` formats.
 - **Download Subtitles**: After processing the subtitles, you can download them in either `SRT` or `ASS` format, with all replacements applied.
-- **Highlighting Non-Indonesian Words**: The application can highlight replaced words in the subtitles using a specific style. You can enable or disable this feature via the `ENABLE_WORD_HIGHLIGHT` constant.
+- **Highlighting Non-Indonesian Words**: The application can highlight words that ready to replaced in the subtitles using a specific style. It can detect typos, misspellings and other Indonesian words so that users can modify them directly. You can enable or disable this feature via the `ENABLE_WORD_HIGHLIGHT` constant.
 - **Logging Non-Indonesian Words**: If you are working with Indonesian subtitles, the application can log non-Indonesian words when `ENABLE_NON_INDONESIAN_WORD_LOGGING` is enabled. The logs will be stored in `content/logs/`.
 - **Clear Session**: Clear the session to start fresh with new subtitle files or dictionary entries.
 
@@ -42,7 +42,7 @@ Recent updates have introduced batch processing, non-Indonesian word logging, an
    - **Upload Multiple Files**: You can upload multiple subtitle files at once. The files will be processed in parallel, and their replacements will be applied.
    - **Batch Download**: After processing, you can download all the modified files in a zip archive. The batch process allows downloading in `SRT` or `ASS` format.
 
-5. **Highlight Unknown Words**:
+5. **Highlighting Non-Indonesian Words**:
    If you are working with Indonesian subtitles, you can enable the highlighting of unknown words (words not found in the Indonesian dictionary) in the subtitle text. The application can also log these unknown words for future review if logging is enabled in the configuration.
 
 6. **Clear Session**:

@@ -37,8 +37,11 @@
                             <?php else: ?>
                                 <div class="editable" data-index="<?= $subtitleIndex ?>">
                                 <?php endif; ?>
-                                <?= replaceWords($subtitle['text'], true) ?>
-                                <input type="text" class="text-edit" style="display: none;" value="<?= htmlspecialchars(strip_tags(replaceWords($subtitle['text'], false))) ?>">
+                                <span class="text-display" data-original-text="<?= htmlspecialchars($subtitle['text']) ?>">
+                                    <?= replaceWords($subtitle['text'], true) ?>
+                                </span>
+                                <input type="text" class="text-edit" style="display: none;"
+                                    value="<?= htmlspecialchars(strip_tags(replaceWords($subtitle['text'], false))) ?>">
                                 </div>
                     </td>
                 </tr>
