@@ -1,8 +1,8 @@
 <?php
 require_once 'vendor/autoload.php'; // Tambahkan di awal file
 
-define('ENABLE_WORD_HIGHLIGHT', false); // Kontrol highlight
-define('ENABLE_NON_INDONESIAN_WORD_LOGGING', false); // Kontrol logging
+define('ENABLE_WORD_HIGHLIGHT', true); // Kontrol highlight
+define('ENABLE_NON_INDONESIAN_WORD_LOGGING', true); // Kontrol logging
 
 function handleSingleRequest()
 {
@@ -539,17 +539,14 @@ function loadIndonesianDictionary()
     return array_flip($words);
 }
 
-function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null)
+function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null, $currentFileIndex = null)
 {
     // Jika highlight dinonaktifkan, kembalikan teks asli
-    if (defined('ENABLE_WORD_HIGHLIGHT') && !ENABLE_WORD_HIGHLIGHT) {
+    if (!ENABLE_WORD_HIGHLIGHT || !ENABLE_NON_INDONESIAN_WORD_LOGGING) {
         return htmlspecialchars($text);
     }
-
-    // Panggil fungsi logging jika lineNumber tersedia DAN logging enabled
-    if ($lineNumber !== null && defined('ENABLE_NON_INDONESIAN_WORD_LOGGING') && ENABLE_NON_INDONESIAN_WORD_LOGGING) {
-        logIndonesiaWords($text, $lineNumber, $logFile);
-    }
+    // Di bagian atas functions.php, tambahkan:
+    $currentFileIndex = $_SESSION['current_file_index'] ?? null;
 
     static $stemmer = null;
     static $indonesianWords = null;
@@ -565,6 +562,11 @@ function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null)
     // Jika kamus tidak ada, kembalikan teks asli tanpa highlight
     if (!$dictionaryExists) {
         return htmlspecialchars($text);
+    }
+
+    // Inisialisasi session untuk menyimpan kata tidak dikenal
+    if (!isset($_SESSION['non_indonesian_words'])) {
+        $_SESSION['non_indonesian_words'] = [];
     }
 
     $specialCharsPattern = '/(\\\\[NnHh]|\\R|\{\\.*?\})/';
@@ -598,6 +600,23 @@ function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null)
                 if (!isset($indonesianWords[$stemmed]) && !isset($indonesianWords[$lowerToken])) {
                     $result .= '<span class="non-indonesian-word" title="Kata tidak dikenali">' .
                         htmlspecialchars($token) . '</span>';
+
+                    // Simpan kata tidak dikenal dengan key yang unik
+                    if ($lineNumber !== null) {
+                        $fileKey = isset($GLOBALS['currentFileIndex']) ? 'file_' . $GLOBALS['currentFileIndex'] : 'single';
+                        if (!isset($_SESSION['non_indonesian_words'][$fileKey])) {
+                            $_SESSION['non_indonesian_words'][$fileKey] = [];
+                        }
+
+                        // Gunakan kombinasi unik untuk key
+                        $uniqueKey = $token . '|' . $lineNumber . '|' . $fileKey;
+                        $_SESSION['non_indonesian_words'][$fileKey][$uniqueKey] = [
+                            'line' => $lineNumber,
+                            'word' => $token,
+                            'file_name' => isset($GLOBALS['currentFileIndex']) ?
+                                $_SESSION['batch_files'][$GLOBALS['currentFileIndex']]['file_name'] : ($_SESSION['file_name'] ?? 'unknown')
+                        ];
+                    }
                 } else {
                     $result .= htmlspecialchars($token);
                 }

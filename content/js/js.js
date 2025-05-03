@@ -220,4 +220,115 @@ $(document).ready(function() {
         $form.attr('action', action);
     });
 
+    $(document).ready(function() {
+        // Tampilkan modal kata tidak dikenal
+        $('#showNonIndonesianWords').click(function() {
+            // Periksa mode (batch atau single)
+            const isBatchMode = $('.batchConversion').length > 0;
+            
+            if (isBatchMode) {
+                // Mode batch - ambil data untuk semua file
+                $.ajax({
+                    url: 'includes/get-words.php',
+                    method: 'GET',
+                    data: { batch_mode: isBatchMode },
+                    success: function(response) {
+                        if (isBatchMode) {
+                            // Kosongkan semua tab
+                            $('[id^="nonIndonesianWordsList-"]').html(
+                                '<tr><td colspan="2" class="text-center">Memuat data...</td></tr>'
+                            );
+                            
+                            if (response && response.length > 0) {
+                                response.forEach(function(fileData) {
+                                    const wordsList = $(`#nonIndonesianWordsList-${fileData.file_index}`);
+                                    wordsList.empty();
+                                    
+                                    if (fileData.words && fileData.words.length > 0) {
+                                        fileData.words.forEach(function(item) {
+                                            wordsList.append(
+                                                `<tr>
+                                                    <td>${item.line}</td>
+                                                    <td>${item.word}</td>
+                                                </tr>`
+                                            );
+                                        });
+                                    } else {
+                                        wordsList.html(
+                                            '<tr><td colspan="2" class="text-center">Tidak ada kata yang tidak dikenali</td></tr>'
+                                        );
+                                    }
+                                });
+                            }
+                        } else {
+                            // Mode single file
+                            const wordsList = $('#nonIndonesianWordsList-single');
+                            wordsList.empty();
+                            
+                            if (response && response.length > 0) {
+                                response.forEach(function(item) {
+                                    wordsList.append(
+                                        `<tr>
+                                            <td>${item.line}</td>
+                                            <td>${item.word}</td>
+                                        </tr>`
+                                    );
+                                });
+                            } else {
+                                wordsList.html(
+                                    '<tr><td colspan="2" class="text-center">Tidak ada kata yang tidak dikenali</td></tr>'
+                                );
+                            }
+                        }
+                        
+                        $('#nonIndonesianWordsModal').modal('show');
+                    },
+                    error: function() {
+                        alert('Gagal memuat data kata tidak dikenali');
+                    }
+                });
+            } else {
+                // Mode single file
+                $.ajax({
+                    url: 'includes/get-words.php',
+                    method: 'GET',
+                    success: function(response) {
+                        const wordsList = $('#nonIndonesianWordsList-single');
+                        wordsList.empty();
+                        
+                        if (response.length > 0) {
+                            response.forEach(function(item) {
+                                wordsList.append(
+                                    `<tr>
+                                        <td>${item.line}</td>
+                                        <td>${item.word}</td>
+                                    </tr>`
+                                );
+                            });
+                        } else {
+                            wordsList.append(
+                                '<tr><td colspan="2" class="text-center">Tidak ada kata yang tidak dikenali</td></tr>'
+                            );
+                        }
+                        
+                        $('#nonIndonesianWordsModal').modal('show');
+                    }
+                });
+            }
+        });
+    
+        // Export ke TXT
+        $('#exportNonIndonesianWords').click(function() {
+            const isBatchMode = $('.batchConversion').length > 0;
+            
+            if (isBatchMode) {
+                // Mode batch - buka tab baru untuk trigger download ZIP
+                window.open('includes/export-words.php?batch_mode=1', '_blank');
+            } else {
+                // Mode single file
+                window.location.href = 'includes/export-words.php';
+            }
+        });
+    });
+
 });

@@ -2,6 +2,10 @@
 session_start();
 
 require __DIR__ . '/functions.php';
+// Di bagian atas display.php dan display-batch.php, sebelum session_start():
+if (!isset($_SESSION['non_indonesian_words'])) {
+    $_SESSION['non_indonesian_words'] = [];
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     handleSingleRequest();
@@ -50,6 +54,7 @@ $subtitles = $_SESSION['subtitles'] ?? [];
         <?php require __DIR__ . '/includes/download-form.php'; ?>
         <?php require __DIR__ . '/includes/dictionary-list.php'; ?>
         <?php require __DIR__ . '/includes/subtitle-table.php'; ?>
+        <?php require __DIR__ . '/includes/modal-words.php'; ?>
     <?php else: ?>
         <div class="container">
             <p class="alert alert-warning text-center">No subtitle data found.</p>
@@ -57,6 +62,11 @@ $subtitles = $_SESSION['subtitles'] ?? [];
     <?php endif; ?>
     </div>
 </body>
+<?php if (ENABLE_WORD_HIGHLIGHT && ENABLE_NON_INDONESIAN_WORD_LOGGING): ?>
+    <button type="button" class="btn btn-warning position-fixed bottom-0 end-0 m-3" id="showNonIndonesianWords">
+        <i class="fas fa-exclamation-triangle"></i> Kata Tidak Dikenali
+    </button>
+<?php endif; ?>
 <script>
     // Simpan seluruh dictionary di JavaScript
     const fullDictionary = <?= json_encode($dictionary) ?>;
