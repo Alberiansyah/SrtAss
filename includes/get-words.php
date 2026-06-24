@@ -2,7 +2,7 @@
 session_start();
 header('Content-Type: application/json');
 
-$isBatchMode = isset($_GET['batch_mode']) && $_GET['batch_mode'] == 'true';
+$isBatchMode = isset($_GET['batch_mode']) && ($_GET['batch_mode'] === 'true' || $_GET['batch_mode'] === '1' || $_GET['batch_mode'] === true);
 $response = [];
 
 if ($isBatchMode && isset($_SESSION['batch_files'])) {

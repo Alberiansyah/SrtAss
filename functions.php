@@ -54,7 +54,10 @@ function handleSingleRequest()
     }
 
     if (isset($_POST['download'])) {
-        $format = $_POST['format'];
+        $format = $_POST['format'] ?? '';
+        if (!in_array($format, ['srt', 'ass'], true)) {
+            die('Invalid format');
+        }
         $subtitles = $_SESSION['subtitles'];
         $originalFileName = pathinfo($_SESSION['uploaded_file_name'], PATHINFO_FILENAME);
         $subtitleType = $_POST['subtitle_type'] ?? 'anime';  // Default to anime if not set
@@ -67,7 +70,7 @@ function handleSingleRequest()
             $styles = $_SESSION['styles'] ?? [];
             $scriptInfo = $_SESSION['scriptInfo'] ?? '';
             $projectGarbage = $_SESSION['projectGarbage'] ?? '';
-            $content = convertToAss($subtitles, $styles, $scriptInfo, $projectGarbage, $subtitleType); // Pass subtitle type
+            $content = convertToAss($subtitles, $subtitleType, $styles, $scriptInfo, $projectGarbage); // Pass subtitle type
             $fileName = $originalFileName . '.ass';
             header('Content-Type: application/x-ansi');
         }
@@ -82,6 +85,8 @@ function handleSingleRequest()
         $_SESSION = [];
         session_unset();
         session_destroy();
+        session_regenerate_id(true);
+        setcookie(session_name(), '', time() - 3600, '/');
         header("Location: index.php");
         exit;
     }
@@ -156,7 +161,7 @@ function handleBatchRequest()
                         $styles = $file['styles'] ?? [];
                         $scriptInfo = $file['scriptInfo'] ?? '';
                         $projectGarbage = $file['projectGarbage'] ?? '';
-                        $content = convertToAss($subtitles, $styles, $scriptInfo, $projectGarbage, $subtitleType);
+                        $content = convertToAss($subtitles, $subtitleType, $styles, $scriptInfo, $projectGarbage);
                         $ext = 'ass';
                     }
                     $fileName = $originalFileName . '.' . $ext;
@@ -210,6 +215,8 @@ function handleBatchRequest()
         $_SESSION = [];
         session_unset();
         session_destroy();
+        session_regenerate_id(true);
+        setcookie(session_name(), '', time() - 3600, '/');
         header("Location: index.php");
         exit;
     }
@@ -326,6 +333,7 @@ function parseAss($content)
         // Memasukkan bagian subtitle (Dialogue)
         if (strpos($line, 'Dialogue:') === 0) {
             $parts = explode(',', $line, 10);
+            if (count($parts) < 10) continue;
             $start = $parts[1];
             $end = $parts[2];
             $style = $parts[3];
@@ -352,23 +360,24 @@ function replaceWords($text, $applyHighlight = true)
 {
     if (isset($_SESSION['dictionary'])) {
         // Urutkan kamus berdasarkan panjang kata kunci (terpanjang dulu)
-        uksort($_SESSION['dictionary'], function ($a, $b) {
+        $sortedDict = $_SESSION['dictionary'];
+        uksort($sortedDict, function ($a, $b) {
             return strlen($b) - strlen($a);
         });
 
         // Ganti kata berdasarkan kamus
-        foreach ($_SESSION['dictionary'] as $key => $value) {
+        foreach ($sortedDict as $key => $value) {
             // Pola untuk kata biasa
             $text = preg_replace(
                 '/\b' . preg_quote($key, '/') . '\b/',
-                $applyHighlight ? '<span style="background-color: #00ff33;">' . $value . '</span>' : $value,
+                $applyHighlight ? '<span class="highlight">' . $value . '</span>' : $value,
                 $text
             );
 
             // Pola untuk kasus \n atau \N di awal kata (pertahankan newline)
             $text = preg_replace(
                 '/(\\\\[nN])' . preg_quote($key, '/') . '\b/',
-                '$1' . ($applyHighlight ? '<span style="background-color: #00ff33;">' . $value . '</span>' : $value),
+                '$1' . ($applyHighlight ? '<span class="highlight">' . $value . '</span>' : $value),
                 $text
             );
         }
@@ -418,7 +427,7 @@ function convertTimeToSrt($time)
     return $time;
 }
 
-function convertToAss($subtitles, $styles = [], $scriptInfo = '', $projectGarbage = '', $subtitleType)
+function convertToAss($subtitles, $subtitleType, $styles = [], $scriptInfo = '', $projectGarbage = '')
 {
     $ass = "[Script Info]\n";
 
@@ -545,8 +554,11 @@ function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null, $cu
     if (!ENABLE_WORD_HIGHLIGHT || !ENABLE_NON_INDONESIAN_WORD_LOGGING) {
         return htmlspecialchars($text);
     }
-    // Di bagian atas functions.php, tambahkan:
-    $currentFileIndex = $_SESSION['current_file_index'] ?? null;
+    
+    // Use parameter if provided, otherwise try from session, otherwise default to single
+    if ($currentFileIndex === null) {
+        $currentFileIndex = $_SESSION['current_file_index'] ?? null;
+    }
 
     static $stemmer = null;
     static $indonesianWords = null;
@@ -603,7 +615,7 @@ function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null, $cu
 
                     // Simpan kata tidak dikenal dengan key yang unik
                     if ($lineNumber !== null) {
-                        $fileKey = isset($GLOBALS['currentFileIndex']) ? 'file_' . $GLOBALS['currentFileIndex'] : 'single';
+                        $fileKey = $currentFileIndex !== null ? 'file_' . $currentFileIndex : 'single';
                         if (!isset($_SESSION['non_indonesian_words'][$fileKey])) {
                             $_SESSION['non_indonesian_words'][$fileKey] = [];
                         }
@@ -613,8 +625,8 @@ function highlightIndonesiaWords($text, $lineNumber = null, $logFile = null, $cu
                         $_SESSION['non_indonesian_words'][$fileKey][$uniqueKey] = [
                             'line' => $lineNumber,
                             'word' => $token,
-                            'file_name' => isset($GLOBALS['currentFileIndex']) ?
-                                $_SESSION['batch_files'][$GLOBALS['currentFileIndex']]['file_name'] : ($_SESSION['file_name'] ?? 'unknown')
+                            'file_name' => $currentFileIndex !== null ?
+                                $_SESSION['batch_files'][$currentFileIndex]['file_name'] : ($_SESSION['file_name'] ?? 'unknown')
                         ];
                     }
                 } else {

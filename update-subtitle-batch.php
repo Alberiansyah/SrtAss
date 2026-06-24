@@ -2,23 +2,19 @@
 session_start();
 require __DIR__ . '/functions.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['index']) && isset($_POST['text'])) {
-        // Indeks dikirim dalam format "fileIndex-subtitleIndex"
-        $indices = explode('-', $_POST['index']);
-        if (count($indices) == 2) {
-            $fileIndex = (int)$indices[0];
-            $subtitleIndex = (int)$indices[1];
+header('Content-Type: application/json');
 
-            if (isset($_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex])) {
-                // Perbarui teks subtitle di session untuk file batch
-                $_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex]['text'] = $_POST['text'];
-                // Terapkan penggantian kata dengan highlight untuk tampilan
-                echo replaceWords($_POST['text'], true);
-                exit;
-            }
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['file_index']) && isset($_POST['index']) && isset($_POST['text'])) {
+        $fileIndex = (int)$_POST['file_index'];
+        $subtitleIndex = (int)$_POST['index'];
+
+        if (isset($_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex])) {
+            $_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex]['text'] = $_POST['text'];
+            $highlighted = replaceWords($_POST['text'], true);
+            echo json_encode(['success' => true, 'html' => $highlighted]);
+            exit;
         }
     }
 }
-http_response_code(400);
-echo 'Invalid request';
+echo json_encode(['success' => false, 'error' => 'Invalid request']);

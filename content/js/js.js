@@ -281,12 +281,41 @@ $(document).ready(function() {
                             }
                         }
                         
-                        $('#nonIndonesianWordsModal').modal('show');
+                        $('#nonIndonesianWordsModal').addClass('active');
                     },
                     error: function() {
-                        alert('Gagal memuat data kata tidak dikenali');
+                        showToast('Gagal memuat data kata tidak dikenali', 'error');
                     }
                 });
+            } else {
+                // Mode single file
+                $.ajax({
+                    url: 'includes/get-words.php',
+                    method: 'GET',
+                    success: function(response) {
+                        const wordsList = $('#nonIndonesianWordsList-single');
+                        wordsList.empty();
+
+                        if (response && response.length > 0) {
+                            response.forEach(function(item) {
+                                wordsList.append(
+                                    `<tr>
+                                        <td>${item.line}</td>
+                                        <td>${item.word}</td>
+                                    </tr>`
+                                );
+                            });
+                        } else {
+                            wordsList.html(
+                                '<tr><td colspan="2" class="text-center">Tidak ada kata yang tidak dikenali</td></tr>'
+                            );
+                        }
+
+                        $('#nonIndonesianWordsModal').addClass('active');
+                    }
+                });
+            }
+        });
             } else {
                 // Mode single file
                 $.ajax({

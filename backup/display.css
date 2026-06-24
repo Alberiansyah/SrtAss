@@ -1,0 +1,532 @@
+body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+}
+
+.navbar-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 2px 15px rgba(102, 126, 234, 0.3);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.brand-text {
+    background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+.page-header {
+    background: linear-gradient(180deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+}
+
+.page-header h1 {
+    font-weight: 700;
+    color: #333;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 15px 20px;
+    border: none;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.btn-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border: none;
+    color: white;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 65, 108, 0.4);
+    color: white;
+}
+
+.table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table thead th:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+.table thead th:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+.table td {
+    padding: 15px 12px;
+    vertical-align: middle;
+    border-color: #dee2e6;
+    background: white;
+    color: #333;
+}
+
+.table tbody tr:hover td {
+    background: #f8f9fa;
+}
+
+.table-bordered {
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.editable {
+    position: relative;
+    min-height: 45px;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+.text-display {
+    cursor: pointer;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: block;
+    background: #f8f9fa;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.text-display:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    color: #667eea;
+}
+
+.text-edit {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 2px solid #667eea;
+    background: white;
+}
+
+.text-edit:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.non-indonesian-word {
+    background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+/* Dictionary Word Highlights */
+.highlight,
+.text-display .highlight,
+.dictionary-highlight {
+    background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+    color: #333;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.text-display span[style*="background-color"] {
+    background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%) !important;
+    color: #333;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.custom-tabs {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+}
+
+.custom-tabs .nav-link {
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    margin-right: 8px;
+}
+
+.custom-tabs .nav-link:hover {
+    border-color: #667eea;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.custom-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+}
+
+.dictionary-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    padding: 12px 15px;
+    transition: all 0.2s ease;
+}
+
+.dictionary-item:hover {
+    transform: translateX(5px);
+    border-color: #667eea;
+    box-shadow: 0 3px 15px rgba(102, 126, 234, 0.15);
+}
+
+.dictionary-text {
+    font-size: 15px;
+}
+
+.dictionary-text strong[type="original"] {
+    color: #667eea !important;
+    font-weight: 700;
+}
+
+.dictionary-text strong[type="convert"] {
+    color: #11998e !important;
+    font-weight: 700;
+}
+
+.highlight {
+    background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.modal-header-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+}
+
+.modal-header-gradient .modal-title {
+    color: white;
+    font-weight: 600;
+}
+
+.modal-header-gradient .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+.modal-header-gradient .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-tabs-wrapper {
+    background: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-tabs {
+    border: none;
+    gap: 8px;
+}
+
+.modal-tabs .nav-link {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-weight: 500;
+    color: #666;
+    background: white;
+    font-size: 0.9rem;
+}
+
+.modal-tabs .nav-link:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.modal-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+}
+
+.modal-footer {
+    background: #f8f9fa;
+    padding: 15px 25px;
+}
+
+.empty-state {
+    animation: fadeInUp 0.5s ease;
+}
+
+.position-fixed.bottom-0.end-0.m-3 {
+    box-shadow: 0 5px 20px rgba(255, 193, 7, 0.4);
+    font-weight: 600;
+    padding: 12px 20px;
+}
+
+.toast {
+    border-radius: 10px;
+    border: none;
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 12px 15px;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.input-group-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 3px;
+    color: #667eea;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card, .table {
+    animation: fadeInUp 0.4s ease;
+}
+
+/* Dictionary Text Styling */
+.dictionary-text {
+    font-size: 14px;
+}
+
+.dictionary-text .original {
+    color: #667eea;
+}
+
+.dictionary-text .replacement {
+    color: #11998e;
+}
+
+/* Download Option Cards */
+.download-option {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.download-option:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.download-option h6 {
+    color: #333;
+}
+
+/* Input Group Styling */
+.input-group-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    border-radius: 10px 0 0 10px;
+}
+
+.form-control {
+    border-radius: 0 10px 10px 0;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Button Enhancements */
+.btn-group .btn {
+    border-radius: 8px;
+}
+
+.btn-group .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-group .btn:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* List Group Items */
+.list-group-item {
+    border-radius: 8px;
+    margin-bottom: 6px;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    transform: translateX(3px);
+}
+
+.dictionary-item {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    padding: 12px 15px;
+    transition: all 0.2s ease;
+}
+
+.dictionary-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.15);
+}
+
+/* Badge Styling */
+.badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* Form Label */
+.form-label {
+    color: #495057;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+/* Page Header */
+.page-header {
+    background: linear-gradient(180deg, rgba(102, 126, 234, 0.08) 0%, transparent 100%);
+}
+
+.page-header h1 {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .custom-tabs .nav-link {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+    
+    .table {
+        font-size: 0.85rem;
+    }
+    
+    .download-option {
+        margin-bottom: 1rem;
+    }
+}

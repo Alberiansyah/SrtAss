@@ -1,80 +1,213 @@
 # SrtAss
 
-**SrtAss** is a web-based application designed to handle subtitle files in the `SRT` and `ASS` formats. The main functionality includes the ability to upload subtitle files, process them, make word replacements based on a custom dictionary, and download the modified subtitles in various formats. The application also supports adding, removing, and modifying the dictionary entries, making it flexible for users working with multiple subtitle languages or styles.
-
-Recent updates have introduced batch processing, non-Indonesian word logging, and highlighting of unknown words, improving the user experience significantly.
+**SrtAss** is a web-based subtitle editor for `SRT` and `ASS` formats. Supports dictionary-based word replacement, batch multi-file processing, Indonesian language word detection with Sastrawi stemming, video preview with synchronized subtitle overlay, inline WYSIWYG editing, dark/light theme, and various export options.
 
 ## Features
 
-- **File Upload**: Upload `SRT` or `ASS` subtitle files. The application will automatically detect and parse the subtitle file format.
-- **Dictionary Management**:
-  - Add new words to the dictionary to automatically replace terms in the subtitles.
-  - Remove existing dictionary entries and update the subtitle text accordingly.
-  - Manage dictionary items with an easy-to-use interface.
-- **Highlighting Word Replacement**: Replace words in the subtitle file using the dictionary, and apply optional highlights to the replacements.
-- **Batch File Processing**: Upload and process multiple subtitle files in one go, with batch downloading options available. Files are processed in parallel and saved as either `SRT` or `ASS` formats.
-- **Download Subtitles**: After processing the subtitles, you can download them in either `SRT` or `ASS` format, with all replacements applied.
-- **Highlighting Non-Indonesian Words**: The application can highlight words that ready to replaced in the subtitles using a specific style. It can detect typos, misspellings and other Indonesian words so that users can modify them directly. You can enable or disable this feature via the `ENABLE_WORD_HIGHLIGHT` constant.
-- **Logging Non-Indonesian Words**: If you are working with Indonesian subtitles, the application can log non-Indonesian words when `ENABLE_NON_INDONESIAN_WORD_LOGGING` is enabled. The logs will be stored in `content/logs/`.
-- **Clear Session**: Clear the session to start fresh with new subtitle files or dictionary entries.
+### File Upload & Parsing
+- **Single & batch upload** — drag-drop or click-to-browse for `.srt` and `.ass` files
+- **SRT parser** — parses sequential subtitle number, timecode, multi-line text
+- **ASS parser** — parses `[Script Info]`, `[Aegisub Project Garbage]`, `[V4+ Styles]`, `[Events] Dialoque`
+- **Route to editor** — single file → `display.php`, multiple files → `display-batch.php`
 
-## Setup Instructions
+### Video Player
+- **HTML5 video player** with drag-drop video loading
+- **Synchronized subtitle overlay** — shows current subtitle on the video frame
+- **Subtitle position toggle** — overlay top/bottom, saved to localStorage
+- **Fullscreen mode** with CSS fallback
+- **Play/Pause** — button or Space key
+- **Skip ±5 seconds** — buttons or Arrow keys
+- **Current/total time display** — `00:00:00` format
+- **Resizable video panel** — toggle between default (280px) and large (500px)
 
-1. **Create the Dictionary File**:
-   Ensure that a `dictionary.json` file exists in the `content/json/` directory. This file will store all the words and their replacements for use in the subtitle files. Example content for the file:
+### Timeline
+- **Visual timeline ruler** with canvas rendering
+- **Subtitle duration blocks** — clickable to seek
+- **Progress bar** with gradient and glow effect
+- **Range slider** for fine seeking
+- **Previous/Next subtitle** — chevron buttons or ArrowUp/ArrowDown
 
+### Subtitle List
+- **Index, start/end time, original & modified text** per row
+- **Real-time search** — filters original and modified text
+- **Subtitle count badge**
+- **Single click** — select subtitle (blue border highlight)
+- **Ctrl+Click** — toggle multi-select for batch operations
+- **Ctrl+Shift+Click** — range select contiguous rows
+- **Active row auto-highlight** during video playback
+- **Scroll-into-view** on selection
+- **Play-from-this-line button** per row
+- **Delete subtitle button** per row
+
+### Inline Subtitle Editor
+- **Double-click** to edit original or modified text
+- **ContentEditable WYSIWYG editor**
+- **Formatting toolbar** per subtitle — Bold, Italic, Underline, Strikethrough
+- **Save** (Ctrl+Enter) / Cancel (Escape)
+- **Enter** inserts line break without `<div>` tags
+- **AJAX save** — updates server and refreshes list
+
+### Batch Operations (Multi-Select)
+- **Bold / Italic / Underline / Strikethrough** — apply formatting to all selected rows
+- **Merge selected** — opens merge dialog (choose which text to keep, combines time range)
+- **Delete selected** — confirmation then batch delete
+- **Clear selection**
+
+### Dictionary System
+- **Persistent storage** — `content/json/dictionary.json` (sorted, case-insensitive)
+- **Add entry** — key/value pair via sidebar form
+- **Remove entry** — per-entry delete, restores original subtitle text
+- **Dictionary search** — filter by original or replacement word
+- **Entry count** — visible / total in panel header
+- **Import** — from JSON or TXT (`key=value`) files
+- **Export** — as JSON or TXT
+- **Pre-populated** — ~370 word replacements (informal → formal Indonesian)
+- **Auto-replace** — `replaceWords()` applied to all subtitle text on load
+- **Highlighted replacements** — wrapped in `<span class="highlight">`
+
+### Indonesian Language Detection
+- **112,651-word Indonesian dictionary** (KBBI-derived)
+- **Sastrawi stemming** — stems each word before dictionary lookup
+- **Unknown word highlighting** — `<span class="non-indonesian-word">` (yellow)
+- **Session logging** — stores unknown words per file, deduplicated by word+line
+- **File logging** — `content/logs/*.log`
+- **Configurable** — `ENABLE_WORD_HIGHLIGHT` and `ENABLE_NON_INDONESIAN_WORD_LOGGING` constants
+- **Handles ASS tags** — preserves `\N`, `\h`, `\R`, `{...}` during detection
+
+### Unknown Words Modal
+- **Single mode** — grouped 3-column layout with line number and word
+- **Batch mode** — per-file tabs with word count badge
+- **Click to jump** — switches file tab, selects subtitle, seeks video, plays
+- **Play button per word**
+- **Export** — TXT (single) or ZIP with per-file TXT (batch)
+- **Tab persistence** — active tab saved to localStorage
+- **Scroll persistence** — scroll position saved per tab
+- **Fixed tab bar** — tabs stay visible while content scrolls
+- **Empty state** — checkmark when no unknown words
+
+### Format Export
+- **SRT** — auto-increment numbering, `00:00:00,000` timecodes, HTML→ASS tag conversion
+- **ASS** — Script Info header, Aegisub garbage, V4+ Styles, Events
+  - **Anime**: 5 styles (Default, Atas, Red PK, Signs, Outline — GosmickSans 75pt)
+  - **Movie**: Default — Panefresco 800wt 50pt
+  - **Original**: Preserved from source
+- **Batch ZIP** — timestamped archive with all files converted
+
+### Theme System
+- **Dark mode** (default) — backgrounds #0f0f14, surfaces #1f1f2a, text #e5e7eb
+- **Light mode** — backgrounds #e2e6ec, surfaces #eef1f6, text #1a2433
+- **CSS variables** — all colors via `--bg-body`, `--text-primary`, etc.
+- **localStorage persistence** — theme choice saved across sessions
+- **Toggle button** — moon/sun icon in header
+
+### Notification System
+- **Toast notifications** — slide-in from right, auto-dismiss 3s
+- **Three types** — Success (green), Error (red), Warning (yellow)
+- **Icons** — check-circle, times-circle, exclamation-triangle
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Space** | Play / Pause (disabled when editing contenteditable text) |
+| **←** | Skip backward 5 seconds |
+| **→** | Skip forward 5 seconds |
+| **↑** | Previous subtitle |
+| **↓** | Next subtitle |
+| **Enter** | Go to selected subtitle and play (single mode only) |
+| **Ctrl+S** | Save / Download |
+| **Ctrl+Enter** | Save inline edit |
+| **Esc** | Cancel inline edit |
+| **Enter** (in editor) | Insert line break (without closing editor) |
+| **Ctrl+Click** | Toggle multi-select row |
+| **Ctrl+Shift+Click** | Range select rows |
+| **Double-click** | Edit subtitle inline |
+
+## File Structure
+
+```
+├── index.php                    Landing page / upload
+├── display.php                  Single-file subtitle editor
+├── display-batch.php            Multi-file batch editor
+├── functions.php                Core parsing, export, dictionary, word detection
+├── video-player.php             Standalone video + subtitle player
+├── merge-subtitle.php           AJAX merge (single)
+├── merge-subtitle-batch.php     AJAX merge (batch)
+├── delete-subtitle.php          AJAX delete (single)
+├── delete-subtitle-batch.php    AJAX delete (batch)
+├── update-subtitle.php          AJAX update (single)
+├── update-subtitle-batch.php    AJAX update (batch)
+├── content/
+│   ├── css/
+│   │   ├── theme.css            CSS variables for dark/light theme
+│   │   ├── editor.css           Main editor styles
+│   │   ├── modern.css           Legacy styles
+│   │   └── video-editor.css     Styles for video-player.php
+│   ├── js/
+│   │   ├── editor.js            Auto-save, modals, interactions
+│   │   ├── js.js                Utility functions
+│   │   ├── video-editor.js      Video player logic
+│   │   └── video-player.js      Standalone player logic
+│   ├── json/
+│   │   ├── dictionary.json      Word replacement pairs
+│   │   └── id-words.txt         Indonesian dictionary (~112k words)
+│   └── logs/                    Non-Indonesian word logs
+├── includes/
+│   ├── get-words.php            JSON endpoint for unknown words
+│   ├── export-words.php         TXT/ZIP export of unknown words
+│   ├── export-dictionary.php    JSON/TXT dictionary export
+│   ├── import-dictionary.php    JSON/TXT dictionary import
+│   ├── dictionary-form.php      Add entry form
+│   ├── dictionary-list.php      Expandable dictionary grid
+│   ├── subtitle-table.php       AJAX-loaded subtitle table
+│   └── ...                      Modal partials (download, merge, confirm, shortcuts)
+├── vendor/sastrawi/             Indonesian stemmer library
+└── backup/                      Archived CSS
+```
+
+## Setup
+
+1. **Dictionary file**: Create `content/json/dictionary.json`:
    ```json
-   {
-     "Hey how's it going": "Good morning"
-   }
+   { "Hey how's it going": "Good morning" }
    ```
 
-2. **Upload Subtitle Files**:
-   You can upload your subtitle files (`SRT` or `ASS` format) using the upload interface. The application will automatically process these files, parse their content, and make it available for editing or downloading.
+2. **Upload**: Drag-drop `.srt` or `.ass` files on the upload page.
 
-3. **Dictionary Management**:
+3. **Edit**: Double-click any subtitle to edit inline, or use the formatting toolbar.
 
-   - **Add to Dictionary**: You can add new word pairs (e.g., replace `Hey` with `Hello`) through the form on the interface. The dictionary entries are saved to `dictionary.json`.
-   - **Remove from Dictionary**: If you no longer need a replacement, simply remove the entry, and the changes will reflect in the subtitles automatically.
+4. **Replace**: Add dictionary entries via the sidebar form — replacements apply in real-time.
 
-4. **Batch File Processing**:
-
-   - **Upload Multiple Files**: You can upload multiple subtitle files at once. The files will be processed in parallel, and their replacements will be applied.
-   - **Batch Download**: After processing, you can download all the modified files in a zip archive. The batch process allows downloading in `SRT` or `ASS` format.
-
-5. **Highlighting Non-Indonesian Words**:
-   If you are working with Indonesian subtitles, you can enable the highlighting of unknown words (words not found in the Indonesian dictionary) in the subtitle text. The application can also log these unknown words for future review if logging is enabled in the configuration.
-
-6. **Clear Session**:
-   If you want to start fresh or reset the dictionary word, you can clear the session, which will delete any files and dictionary changes.
-
-7. **Download Processed Subtitles**:
-   After processing the subtitles, you can download them in your desired format (`SRT` or `ASS`). The subtitle text will reflect the word replacements based on the current dictionary.
+5. **Export**: Choose SRT or ASS format and download. Batch files download as ZIP.
 
 ## Troubleshooting
 
-- **Dictionary Not Working**: If the dictionary is not being applied, try clearing the session and re-uploading the subtitle file. This will ensure that the dictionary is properly loaded and applied to the subtitle content.
-- **Empty Dictionary**: If the dictionary file is missing or empty, the application will still function but without any word replacements.
-- **Batch Download Not Working**: Ensure that all uploaded files are in a valid format (`SRT` or `ASS`). The batch download functionality will only process files of these formats.
+- **Dictionary not applied**: Clear session (`New Session` button) and re-upload.
+- **Missing dictionary file**: App works without replacements; upload one via Import.
+- **Unknown words show wrong lines**: Session was stale — already fixed (auto-cleared on render).
+- **Batch download fails**: Ensure all files are valid `.srt` or `.ass`.
+- **Video won't load**: Ensure browser supports the format (.mp4, .webm recommended).
 
-## Folder Structure
+## Technologies
 
-- `content/json/`: Store the dictionary file (`dictionary.json`) here.
-- `content/logs/`: Logs for non-Indonesian words are stored here.
+- **PHP 8+** — server-side logic, session handling
+- **jQuery** — AJAX, DOM manipulation
+- **Bootstrap 5.3** — tabs, modals, nav, table, forms
+- **Font Awesome 6** — icons
+- **Sastrawi** — Indonesian word stemming
+- **Web Storage API** — theme, subtitle position, unknown words tab persistence
+- **ZipArchive** — batch downloads
 
-## Technologies Used
+## Recent Updates
 
-- PHP for server-side logic
-- Session handling to store and manage subtitle and dictionary data
-- JSON for dictionary storage
-- ZipArchive for batch downloading multiple files as a ZIP archive
-- `Sastrawi` library for Indonesian language stemming (for highlighting unknown words)
+- **Light/Dark theme** — full CSS variable migration, no hardcoded colors
+- **Video preview sync** — overlay shows dictionary-modified text; editing updates preview
+- **Unknown words modal** — per-file tabs, localStorage persistence for tab and scroll, fixed tab bar layout
+- **Session freshness** — unknown words session cleared before each render to prevent stale data
+- **Batch tabs** — manual DOM switching (no Bootstrap interference), scope fix for global functions
+- **Keyboard handling** — Space key skips when editing contenteditable fields
+- **CSS architecture** — all colors use `var(--...)` from `theme.css`
 
 ## License
 
-This project is open-source. Feel free to fork and modify as needed for your personal use.
-
-## Acknowledgments
-
-- **Sastrawi Library**: Used for Indonesian language processing (stemmers and dictionary matching).
-- **PHP & ZipArchive**: Utilized for file processing and handling batch downloads.
+Open-source. Fork and modify as needed.

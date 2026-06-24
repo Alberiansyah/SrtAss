@@ -1,6 +1,6 @@
 <div class="container-fluid">
-    <table class="table table-bordered mt-4 mb-3">
-        <thead class="table-dark">
+    <table class="table table-bordered table-hover mt-4 mb-3">
+        <thead class="custom-table-header">
             <tr>
                 <th>No</th>
                 <th>Start Time</th>
@@ -20,6 +20,9 @@
             }
 
             $no = 1;
+            // Clear session words for this file so highlights reflect current text
+            $fileKey = $currentFileIndex !== null ? 'file_' . $currentFileIndex : 'single';
+            $_SESSION['non_indonesian_words'][$fileKey] = [];
             foreach ($subtitles as $subtitleIndex => $subtitle): ?>
                 <tr>
                     <td><?= $no ?></td>
