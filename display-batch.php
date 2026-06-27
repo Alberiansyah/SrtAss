@@ -1316,6 +1316,23 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 return timeStr.replace(',', '.');
             }
             
+            function assToHtml(text) {
+                return text
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/\\N/g, '<br>')
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\\h/g, '&nbsp;')
+                    .replace(/\{\\i1\}/g, '<i>')
+                    .replace(/\{\\i0\}/g, '</i>')
+                    .replace(/\{\\b1\}/g, '<b>')
+                    .replace(/\{\\b0\}/g, '</b>')
+                    .replace(/\{\\u1\}/g, '<u>')
+                    .replace(/\{\\u0\}/g, '</u>')
+                    .replace(/\{\\s1\}/g, '<s>')
+                    .replace(/\{\\s0\}/g, '</s>')
+                    .replace(/\{[^}]*\}/g, '');
+            }
+
             function updateVideoSubtitleOverlay() {
                 if (!window.batchFiles) return;
                 
@@ -1342,7 +1359,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                     const end = parseTimestamp(sub.end);
                     
                     if (currentTime >= start && currentTime <= end) {
-                        activeSubtitle = sub.text.replace(/<[^>]*>/g, '').trim();
+                        activeSubtitle = assToHtml(sub.text).trim();
                         break;
                     }
                 }

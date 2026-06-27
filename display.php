@@ -1053,7 +1053,7 @@ $styles = $_SESSION['styles'] ?? [];
                         subtitles.forEach((sub, index) => {
                             const start = parseTimestamp(sub.start);
                             const end = parseTimestamp(sub.end);
-                            const cleanText = sub.text.replace(/<[^>]*>/g, '').trim();
+                            const cleanText = assToHtml(sub.text).trim();
                             const cue = new VTTCue(start, end, cleanText);
                             track.addCue(cue);
                         });
@@ -1078,6 +1078,23 @@ $styles = $_SESSION['styles'] ?? [];
                 return timeStr.replace(',', '.');
             }
             
+            function assToHtml(text) {
+                return text
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/\\N/g, '<br>')
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\\h/g, '&nbsp;')
+                    .replace(/\{\\i1\}/g, '<i>')
+                    .replace(/\{\\i0\}/g, '</i>')
+                    .replace(/\{\\b1\}/g, '<b>')
+                    .replace(/\{\\b0\}/g, '</b>')
+                    .replace(/\{\\u1\}/g, '<u>')
+                    .replace(/\{\\u0\}/g, '</u>')
+                    .replace(/\{\\s1\}/g, '<s>')
+                    .replace(/\{\\s0\}/g, '</s>')
+                    .replace(/\{[^}]*\}/g, '');
+            }
+
             function updateVideoSubtitleOverlay() {
                 if (!window.subtitleData) return;
                 
@@ -1098,7 +1115,7 @@ $styles = $_SESSION['styles'] ?? [];
                     const end = parseTimestamp(sub.end);
                     
                     if (currentTime >= start && currentTime <= end) {
-                        activeSubtitle = sub.text.replace(/<[^>]*>/g, '').trim();
+                        activeSubtitle = assToHtml(sub.text).trim();
                         break;
                     }
                 }
