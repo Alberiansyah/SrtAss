@@ -75,6 +75,11 @@ function handleSingleRequest()
             header('Content-Type: application/x-ansi');
         }
 
+        // Bersihkan output buffer
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
         header('Content-Disposition: attachment; filename="' . $fileName . '"');
         header('Content-Length: ' . strlen($content));
         echo $content;
@@ -90,6 +95,59 @@ function handleSingleRequest()
         header("Location: index.php");
         exit;
     }
+
+    if (isset($_POST['restore_subtitles'])) {
+        $data = json_decode($_POST['restore_subtitles'], true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            $_SESSION['subtitles'] = $data;
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'error' => 'Invalid data']);
+        exit;
+    }
+
+    if (isset($_POST['shift_timing'])) {
+        $offsetMs = intval($_POST['shift_timing']);
+        foreach ($_SESSION['subtitles'] as &$sub) {
+            $sub['start'] = adjustTimestampSrt($sub['start'], $offsetMs);
+            $sub['end'] = adjustTimestampSrt($sub['end'], $offsetMs);
+        }
+        echo json_encode(['success' => true, 'subtitles' => $_SESSION['subtitles']]);
+        exit;
+    }
+
+    if (isset($_POST['scale_timing'])) {
+        $ratio = floatval($_POST['scale_timing']);
+        if ($ratio <= 0) { echo json_encode(['success' => false]); exit; }
+        foreach ($_SESSION['subtitles'] as &$sub) {
+            $startSec = srtTimestampToSeconds($sub['start']);
+            $endSec = srtTimestampToSeconds($sub['end']);
+            $sub['start'] = secondsToSrtTimestamp($startSec * $ratio);
+            $sub['end'] = secondsToSrtTimestamp($endSec * $ratio);
+        }
+        echo json_encode(['success' => true, 'subtitles' => $_SESSION['subtitles']]);
+        exit;
+    }
+}
+
+function srtTimestampToSeconds($ts) {
+    $parts = explode(',', $ts);
+    $timeParts = explode(':', $parts[0]);
+    return intval($timeParts[0]) * 3600 + intval($timeParts[1]) * 60 + intval($timeParts[2]) + intval($parts[1] ?? 0) / 1000;
+}
+
+function secondsToSrtTimestamp($sec) {
+    $h = floor($sec / 3600);
+    $m = floor(($sec - $h * 3600) / 60);
+    $s = floor($sec - $h * 3600 - $m * 60);
+    $ms = round(($sec - floor($sec)) * 1000);
+    return sprintf('%02d:%02d:%02d,%03d', $h, $m, $s, $ms);
+}
+
+function adjustTimestampSrt($ts, $offsetMs) {
+    $totalMs = srtTimestampToSeconds($ts) * 1000 + $offsetMs;
+    return secondsToSrtTimestamp(max(0, $totalMs / 1000));
 }
 
 function handleBatchRequest()
@@ -150,7 +208,7 @@ function handleBatchRequest()
 
             // Buat file temporer
             $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
-            if ($zip->open($tmpFile, ZipArchive::CREATE) === TRUE) {
+            if ($zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
                 foreach ($batchFiles as $file) {
                     $originalFileName = $file['file_name'];
                     $subtitles = $file['subtitles'];
@@ -168,6 +226,11 @@ function handleBatchRequest()
                     $zip->addFromString($fileName, $content);
                 }
                 $zip->close();
+
+                // Bersihkan output buffer
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
 
                 // Pastikan belum ada output HTML sebelum header
                 header('Content-Type: application/zip');
@@ -218,6 +281,47 @@ function handleBatchRequest()
         session_regenerate_id(true);
         setcookie(session_name(), '', time() - 3600, '/');
         header("Location: index.php");
+        exit;
+    }
+
+    if (isset($_POST['restore_subtitles_batch'])) {
+        $data = json_decode($_POST['restore_subtitles_batch'], true);
+        $fileIndex = intval($_POST['file_index'] ?? -1);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data) && isset($_SESSION['batch_files'][$fileIndex])) {
+            $_SESSION['batch_files'][$fileIndex]['subtitles'] = $data;
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'error' => 'Invalid data']);
+        exit;
+    }
+
+    if (isset($_POST['shift_timing'])) {
+        $fileIndex = intval($_POST['file_index'] ?? -1);
+        $offsetMs = intval($_POST['shift_timing']);
+        if (isset($_SESSION['batch_files'][$fileIndex])) {
+            foreach ($_SESSION['batch_files'][$fileIndex]['subtitles'] as &$sub) {
+                $sub['start'] = adjustTimestampSrt($sub['start'], $offsetMs);
+                $sub['end'] = adjustTimestampSrt($sub['end'], $offsetMs);
+            }
+            echo json_encode(['success' => true, 'subtitles' => $_SESSION['batch_files'][$fileIndex]['subtitles']]);
+            exit;
+        }
+        echo json_encode(['success' => false]);
+        exit;
+    }
+
+    if (isset($_POST['scale_timing'])) {
+        $fileIndex = intval($_POST['file_index'] ?? -1);
+        $ratio = floatval($_POST['scale_timing']);
+        if ($ratio <= 0 || !isset($_SESSION['batch_files'][$fileIndex])) {
+            echo json_encode(['success' => false]); exit;
+        }
+        foreach ($_SESSION['batch_files'][$fileIndex]['subtitles'] as &$sub) {
+            $sub['start'] = secondsToSrtTimestamp(srtTimestampToSeconds($sub['start']) * $ratio);
+            $sub['end'] = secondsToSrtTimestamp(srtTimestampToSeconds($sub['end']) * $ratio);
+        }
+        echo json_encode(['success' => true, 'subtitles' => $_SESSION['batch_files'][$fileIndex]['subtitles']]);
         exit;
     }
 }
@@ -368,18 +472,24 @@ function replaceWords($text, $applyHighlight = true)
         // Ganti kata berdasarkan kamus
         foreach ($sortedDict as $key => $value) {
             // Pola untuk kata biasa
-            $text = preg_replace(
+            $replaced = preg_replace(
                 '/\b' . preg_quote($key, '/') . '\b/',
                 $applyHighlight ? '<span class="highlight">' . $value . '</span>' : $value,
                 $text
             );
+            if ($replaced !== null) {
+                $text = $replaced;
+            }
 
             // Pola untuk kasus \n atau \N di awal kata (pertahankan newline)
-            $text = preg_replace(
+            $replaced = preg_replace(
                 '/(\\\\[nN])' . preg_quote($key, '/') . '\b/',
                 '$1' . ($applyHighlight ? '<span class="highlight">' . $value . '</span>' : $value),
                 $text
             );
+            if ($replaced !== null) {
+                $text = $replaced;
+            }
         }
     }
     return $text;
@@ -725,4 +835,64 @@ function logIndonesiaWords($text, $lineNumber, $logFile = null)
             FILE_APPEND
         );
     }
+}
+
+function getDictionaryChanges($subtitles)
+{
+    $changes = [];
+    if (!isset($_SESSION['dictionary']) || empty($_SESSION['dictionary'])) {
+        return $changes;
+    }
+
+    $dict = $_SESSION['dictionary'];
+    uksort($dict, function ($a, $b) {
+        return strlen($b) - strlen($a);
+    });
+
+    foreach ($subtitles as $idx => $sub) {
+        $text = $sub['text'] ?? '';
+        $original = $text;
+
+        foreach ($dict as $key => $value) {
+            $pattern = '/\b' . preg_quote($key, '/') . '\b/u';
+            if (preg_match_all($pattern, $original, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[0] as $match) {
+                    $pos = $match[1];
+                    $contextStart = max(0, $pos - 20);
+                    $contextLen = min(40, strlen($original) - $contextStart);
+                    $context = ($contextStart > 0 ? '...' : '') . mb_substr($original, $contextStart, $contextLen) . ($contextStart + $contextLen < strlen($original) ? '...' : '');
+
+                    $changes[] = [
+                        'line' => $idx + 1,
+                        'original' => $key,
+                        'replacement' => $value,
+                        'context' => $context,
+                    ];
+                }
+            }
+
+            $patternN = '/(\\\\[nN])' . preg_quote($key, '/') . '\b/u';
+            if (preg_match_all($patternN, $original, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[0] as $match) {
+                    $pos = $match[1];
+                    $contextStart = max(0, $pos - 20);
+                    $contextLen = min(40, strlen($original) - $contextStart);
+                    $context = ($contextStart > 0 ? '...' : '') . mb_substr($original, $contextStart, $contextLen) . ($contextStart + $contextLen < strlen($original) ? '...' : '');
+
+                    $changes[] = [
+                        'line' => $idx + 1,
+                        'original' => $key,
+                        'replacement' => $value,
+                        'context' => $context,
+                    ];
+                }
+            }
+        }
+    }
+
+    usort($changes, function ($a, $b) {
+        return $a['line'] - $b['line'];
+    });
+
+    return $changes;
 }

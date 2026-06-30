@@ -606,6 +606,8 @@
     transition: all 0.2s;
     border: 1px solid transparent;
     align-items: start;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .subtitle-row:hover {
@@ -796,6 +798,8 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
     box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .edit-editor:focus {
@@ -1319,6 +1323,52 @@
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* ======= Statistics Modal ======= */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 0.5rem;
+}
+.stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 0.75rem;
+    text-align: center;
+}
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+}
+.stats-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.stats-tags .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    background: rgba(99,102,241,0.1);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.stats-tags .tag .count {
+    font-weight: 600;
+    color: var(--primary);
+}
+[data-theme="light"] .stats-tags .tag .count {
+    color: #4f46e5;
+}
+
 /* ======= Keyboard Shortcuts ======= */
 .shortcuts-grid {
     display: grid;
@@ -1521,6 +1571,13 @@
     min-height: 200px;
 }
 
+#unknownWordsList {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 6px;
+}
+
 /* ======= Unknown Words List (Single Mode) ======= */
 .unknown-words-list {
     display: flex;
@@ -1550,6 +1607,26 @@
     background: rgba(99, 102, 241, 0.1);
     border-color: rgba(99, 102, 241, 0.3);
     transform: translateX(4px);
+}
+
+.dc-original {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.dc-arrow {
+    color: var(--text-tertiary);
+    margin: 0 0.25rem;
+    font-size: 0.85rem;
+}
+
+.dc-replacement {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.uw-info .uw-word {
+    font-size: 0.75rem;
 }
 
 .unknown-word-item .uw-info {

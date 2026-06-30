@@ -566,6 +566,12 @@ $styles = $_SESSION['styles'] ?? [];
                 <button class="btn btn-secondary btn-sm" onclick="showShortcuts()" title="Keyboard Shortcuts">
                     <i class="fas fa-keyboard"></i>
                 </button>
+                <button class="btn btn-secondary btn-sm" onclick="showStatistics()" title="Statistics">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="showTiming()" title="Timing Adjustment">
+                    <i class="fas fa-clock"></i>
+                </button>
                 <button class="btn btn-secondary btn-sm" onclick="showSettings()" title="Settings">
                     <i class="fas fa-cog"></i>
                 </button>
@@ -576,8 +582,8 @@ $styles = $_SESSION['styles'] ?? [];
                     <i class="fas fa-download me-1"></i> Download
                 </button>
                 <div class="dropdown-menu" id="downloadDropdown">
-                    <a class="dropdown-item" href="#" onclick="downloadSubtitle('srt')">Export as SRT</a>
                     <a class="dropdown-item" href="#" onclick="downloadSubtitle('ass')">Export as ASS</a>
+                    <a class="dropdown-item" href="#" onclick="downloadSubtitle('srt')">Export as SRT</a>
                 </div>
             </div>
         </header>
@@ -778,8 +784,8 @@ $styles = $_SESSION['styles'] ?? [];
                         <div class="form-group">
                             <label>Format</label>
                             <select id="exportFormat">
+                                <option value="ass" selected>ASS (Advanced SubStation Alpha)</option>
                                 <option value="srt">SRT (SubRip)</option>
-                                <option value="ass">ASS (Advanced SubStation Alpha)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -810,6 +816,76 @@ $styles = $_SESSION['styles'] ?? [];
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <!-- Dictionary Changes Panel -->
+                <div class="panel-section">
+                    <div class="panel-header" onclick="togglePanel(this)">
+                        <h4><i class="fas fa-exchange-alt me-2"></i>Dictionary Changes</h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="panel-content">
+                        <button class="btn btn-info btn-sm w-100" onclick="showDictionaryChanges()">
+                            <i class="fas fa-list me-2"></i>View All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div class="modal-overlay" id="statisticsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Subtitle Statistics</h3>
+                <button class="close-btn" onclick="closeModal('statisticsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-grid" id="statsContainer">
+                    <div class="stat-card"><div class="stat-value" id="statSubs">0</div><div class="stat-label">Total Subtitles</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statDuration">00:00</div><div class="stat-label">Duration</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statWords">0</div><div class="stat-label">Total Words</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statChars">0</div><div class="stat-label">Total Characters</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statCPS">0.0</div><div class="stat-label">Avg Reading Speed (cps)</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statCPL">0.0</div><div class="stat-label">Avg Chars per Line</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statWPL">0.0</div><div class="stat-label">Avg Words per Line</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statUnknown">0</div><div class="stat-label">Unknown Words</div></div>
+                </div>
+                <div class="stats-section">
+                    <h4 style="margin:1rem 0 0.5rem;font-size:0.95rem;color:var(--text-secondary)">Most Common Words</h4>
+                    <div id="statsTopWords" class="stats-tags"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timing Adjustment Modal -->
+    <div class="modal-overlay" id="timingModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Timing Adjustment</h3>
+                <button class="close-btn" onclick="closeModal('timingModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:1rem">
+                    <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">Shift offset (ms)</label>
+                    <div style="display:flex;gap:0.5rem">
+                        <input type="number" id="timingOffset" value="0" class="form-control" style="flex:1" placeholder="e.g. -500 or +1000">
+                        <button class="btn btn-primary" onclick="applyTimingShift()">Apply</button>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.75rem">Negative = earlier, Positive = later</small>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">Scale to fit video duration</label>
+                    <div style="display:flex;gap:0.5rem">
+                        <input type="text" id="timingVideoDuration" class="form-control" style="flex:1" placeholder="e.g. 02:30:00">
+                        <button class="btn btn-primary" onclick="applyTimingScale()">Scale</button>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.75rem">Current: <span id="timingCurrentDur">--:--:--</span></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('timingModal')">Close</button>
             </div>
         </div>
     </div>
@@ -866,6 +942,14 @@ $styles = $_SESSION['styles'] ?? [];
                     <div class="shortcut-item">
                         <span>Select Range</span>
                         <span class="shortcut-key">Ctrl+Shift+Click</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Undo</span>
+                        <span class="shortcut-key">Ctrl+Z</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Redo</span>
+                        <span class="shortcut-key">Ctrl+Y</span>
                     </div>
                 </div>
             </div>
@@ -933,6 +1017,22 @@ $styles = $_SESSION['styles'] ?? [];
         </div>
     </div>
 
+    <!-- Dictionary Changes Modal -->
+    <div class="modal-overlay" id="dictionaryChangesModal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-exchange-alt me-2"></i>Dictionary Changes</h3>
+                <button class="close-btn" onclick="closeModal('dictionaryChangesModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="dictionaryChangesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('dictionaryChangesModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Subtitle data for JavaScript - make accessible globally
         window.subtitleData = <?= json_encode($subtitleData) ?>;
@@ -942,9 +1042,49 @@ $styles = $_SESSION['styles'] ?? [];
         let isPlaying = false;
         let currentTime = 0;
         let duration = 0;
-        
+
         $(document).ready(function() {
             videoPlayer = $('#videoPlayer')[0];
+            
+            // ======= Undo / Redo =======
+            const undoStack = [];
+            const redoStack = [];
+            const MAX_UNDO = 50;
+            
+            window.saveUndoState = function() {
+                if (!window.subtitleData) return;
+                undoStack.push(JSON.parse(JSON.stringify(window.subtitleData)));
+                if (undoStack.length > MAX_UNDO) undoStack.shift();
+                redoStack.length = 0;
+            };
+            
+            window.undo = function() {
+                if (undoStack.length === 0) return;
+                redoStack.push(JSON.parse(JSON.stringify(window.subtitleData)));
+                const state = undoStack.pop();
+                restoreState(state, 'Undo');
+            };
+            
+            window.redo = function() {
+                if (redoStack.length === 0) return;
+                undoStack.push(JSON.parse(JSON.stringify(window.subtitleData)));
+                const state = redoStack.pop();
+                restoreState(state, 'Redo');
+            };
+            
+            function restoreState(state, label) {
+                window.subtitleData = state;
+                $.post(window.location.href, { restore_subtitles: JSON.stringify(state) }, function(resp) {
+                    if (resp && resp.success) {
+                        refreshSubtitleList();
+                        showToast(label + ' successful', 'success');
+                    } else {
+                        showToast(label + ' failed', 'error');
+                    }
+                }, 'json').fail(function() {
+                    showToast(label + ' failed - server error', 'error');
+                });
+            }
             
             if (videoPlayer) {
                 videoPlayer.addEventListener('loadedmetadata', function() {
@@ -1081,18 +1221,14 @@ $styles = $_SESSION['styles'] ?? [];
             function assToHtml(text) {
                 return text
                     .replace(/<[^>]*>/g, '')
-                    .replace(/\\N/g, '<br>')
-                    .replace(/\\n/g, '<br>')
-                    .replace(/\\h/g, '&nbsp;')
-                    .replace(/\{\\i1\}/g, '<i>')
-                    .replace(/\{\\i0\}/g, '</i>')
-                    .replace(/\{\\b1\}/g, '<b>')
-                    .replace(/\{\\b0\}/g, '</b>')
-                    .replace(/\{\\u1\}/g, '<u>')
-                    .replace(/\{\\u0\}/g, '</u>')
-                    .replace(/\{\\s1\}/g, '<s>')
-                    .replace(/\{\\s0\}/g, '</s>')
-                    .replace(/\{[^}]*\}/g, '');
+                    .replace(/\\N/g, '\n')
+                    .replace(/\\n/g, '\n')
+                    .replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>')
+                    .replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>')
+                    .replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>')
+                    .replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>')
+                    .replace(/\{[^}]*\}/g, '')
+                    .replace(/\n/g, '<br>');
             }
 
             function updateVideoSubtitleOverlay() {
@@ -1176,6 +1312,7 @@ $styles = $_SESSION['styles'] ?? [];
             }
             
             function applyBatchFormat(cmd, openTag, closeTag) {
+                window.saveUndoState();
                 const indices = Array.from(selectedRows);
                 let updated = 0;
                 indices.forEach(function(idx) {
@@ -1205,6 +1342,9 @@ $styles = $_SESSION['styles'] ?? [];
                             modified.html(response);
                         });
                         original.text(newText);
+                        if (window.subtitleData && window.subtitleData[idx]) {
+                            window.subtitleData[idx].text = newText;
+                        }
                         updated++;
                     }
                 });
@@ -1225,6 +1365,7 @@ $styles = $_SESSION['styles'] ?? [];
             
             function deleteSubtitle(index) {
                 showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', function() {
+                    saveUndoState();
                     $.post('delete-subtitle.php', { index: index }, function(response) {
                         if (response.success) {
                             showToast('Deleted ' + response.deleted + ' subtitle(s)', 'success');
@@ -1242,6 +1383,7 @@ $styles = $_SESSION['styles'] ?? [];
                 const count = selectedRows.size;
                 if (count === 0) return;
                 showConfirm('Delete ' + count + ' subtitles?', 'Are you sure you want to delete ' + count + ' selected subtitle(s)? This action cannot be undone.', function() {
+                    saveUndoState();
                     const indices = Array.from(selectedRows);
                     $.post('delete-subtitle.php', { indices: JSON.stringify(indices) }, function(response) {
                         if (response.success) {
@@ -1307,6 +1449,7 @@ $styles = $_SESSION['styles'] ?? [];
             }
             
             function doMerge() {
+                saveUndoState();
                 const keepIndex = parseInt($('#mergeRowsList input[name="mergeKeep"]:checked').val());
                 if (isNaN(keepIndex)) {
                     showToast('Select which text to keep', 'warning');
@@ -1500,6 +1643,23 @@ $styles = $_SESSION['styles'] ?? [];
                             downloadSubtitle();
                         }
                         break;
+                    case 'z':
+                        if (e.ctrlKey && !e.shiftKey) {
+                            e.preventDefault();
+                            window.undo();
+                        }
+                        break;
+                    case 'y':
+                        if (e.ctrlKey) {
+                            e.preventDefault();
+                            window.redo();
+                        }
+                        break;
+                }
+                // Ctrl+Shift+Z as alternative redo
+                if (e.ctrlKey && e.shiftKey && e.key === 'z') {
+                    e.preventDefault();
+                    window.redo();
                 }
             });
         });
@@ -1653,6 +1813,7 @@ $styles = $_SESSION['styles'] ?? [];
         }
         
         function editSubtitle(index) {
+            window.saveUndoState();
             const original = $(`.subtitle-original[data-index="${index}"]`);
             const modified = $(`.subtitle-modified[data-index="${index}"]`);
             const currentRaw = modified.text();
@@ -1704,8 +1865,8 @@ $styles = $_SESSION['styles'] ?? [];
             toolbar.on('click', '.et-done', function() { finishEdit(); });
             toolbar.on('click', '.et-cancel', function() { cancelEdit(); });
             
-            var finishEdit = function() {
-                var newHtml = editor.html().trim();
+                    var finishEdit = function() {
+                        var newHtml = editor.html().trim();
                 var newText = htmlToAss(newHtml);
                 cleanup();
                 if (newText !== currentRaw) {
@@ -1892,6 +2053,157 @@ $styles = $_SESSION['styles'] ?? [];
             $('#shortcutsModal').addClass('active');
         }
         
+        function showStatistics() {
+            const subs = window.subtitleData;
+            if (!subs || subs.length === 0) {
+                showToast('No subtitle data', 'warning');
+                return;
+            }
+            
+            let totalChars = 0, totalWords = 0, totalDuration = 0;
+            const wordFreq = {};
+            
+            subs.forEach(function(s) {
+                const text = s.text.replace(/<[^>]*>/g, '').replace(/\{[^}]*\}/g, '').trim();
+                const words = text.match(/[\p{L}]+/gu) || [];
+                totalChars += text.length;
+                totalWords += words.length;
+                words.forEach(function(w) {
+                    const key = w.toLowerCase();
+                    wordFreq[key] = (wordFreq[key] || 0) + 1;
+                });
+                const start = parseTimestamp(s.start);
+                const end = parseTimestamp(s.end);
+                totalDuration += (end - start);
+            });
+            
+            const avgDuration = totalDuration / subs.length;
+            const avgCPS = totalDuration > 0 ? totalChars / totalDuration : 0;
+            
+            $('#statSubs').text(subs.length);
+            
+            // Format duration
+            const durMin = Math.floor(totalDuration / 60);
+            const durSec = Math.floor(totalDuration % 60);
+            $('#statDuration').text(durMin + 'm ' + durSec + 's');
+            
+            $('#statWords').text(totalWords);
+            $('#statChars').text(totalChars);
+            $('#statCPS').text(avgCPS.toFixed(1));
+            $('#statCPL').text((totalChars / subs.length).toFixed(1));
+            $('#statWPL').text((totalWords / subs.length).toFixed(1));
+            
+            // Top 10 most common words
+            const sorted = Object.entries(wordFreq).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+            const container = $('#statsTopWords');
+            container.empty();
+            sorted.forEach(function(entry) {
+                container.append('<span class="tag"><span class="count">' + entry[1] + 'x</span> ' + $('<span>').text(entry[0]).html() + '</span>');
+            });
+            
+            // Unknown words count via AJAX
+            var unknownCount = '...';
+            $('#statUnknown').text(unknownCount);
+            $.get('includes/get-words.php', function(data) {
+                const count = data && Array.isArray(data) ? data.length : 0;
+                $('#statUnknown').text(count);
+            }).fail(function() {
+                $('#statUnknown').text('N/A');
+            });
+            
+            $('#statisticsModal').addClass('active');
+        }
+        
+        function formatTimecode(seconds) {
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(Math.floor(seconds % 60)).padStart(2, '0');
+            const ms = String(Math.round((seconds % 1) * 1000)).padStart(3, '0');
+            return h + ':' + m + ':' + s + ',' + ms;
+        }
+        
+        function secondsToDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return h + 'h ' + m + 'm ' + s + 's';
+        }
+        
+        function showTiming() {
+            const subs = window.subtitleData;
+            if (!subs || subs.length === 0) {
+                showToast('No subtitle data', 'warning');
+                return;
+            }
+            let totalSec = 0;
+            subs.forEach(function(s) {
+                const end = parseTimestamp(s.end);
+                if (end > totalSec) totalSec = end;
+            });
+            $('#timingCurrentDur').text(secondsToDuration(totalSec));
+            $('#timingModal').addClass('active');
+        }
+        
+        function applyTimingShift() {
+            const offsetMs = parseInt($('#timingOffset').val());
+            if (isNaN(offsetMs) || offsetMs === 0) {
+                showToast('Enter a valid offset (non-zero)', 'warning');
+                return;
+            }
+            saveUndoState();
+            $.post(window.location.href, { shift_timing: offsetMs }, function(resp) {
+                if (resp && resp.success) {
+                    window.subtitleData = resp.subtitles;
+                    refreshSubtitleList();
+                    showToast('Timing shifted by ' + offsetMs + 'ms', 'success');
+                } else {
+                    showToast('Timing shift failed', 'error');
+                }
+            }, 'json').fail(function() {
+                showToast('Timing shift failed - server error', 'error');
+            });
+        }
+        
+        function applyTimingScale() {
+            const input = $('#timingVideoDuration').val().trim();
+            if (!input) {
+                showToast('Enter target video duration', 'warning');
+                return;
+            }
+            const parts = input.split(':');
+            if (parts.length !== 3) {
+                showToast('Use format HH:MM:SS', 'warning');
+                return;
+            }
+            const targetSec = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+            if (isNaN(targetSec) || targetSec <= 0) {
+                showToast('Invalid duration', 'warning');
+                return;
+            }
+            let currentDur = 0;
+            const subs = window.subtitleData;
+            subs.forEach(function(s) {
+                const end = parseTimestamp(s.end);
+                if (end > currentDur) currentDur = end;
+            });
+            if (currentDur <= 0) {
+                showToast('Cannot determine current duration', 'warning');
+                return;
+            }
+            saveUndoState();
+            $.post(window.location.href, { scale_timing: targetSec / currentDur }, function(resp) {
+                if (resp && resp.success) {
+                    window.subtitleData = resp.subtitles;
+                    refreshSubtitleList();
+                    showToast('Timing scaled to ' + input, 'success');
+                } else {
+                    showToast('Scale failed', 'error');
+                }
+            }, 'json').fail(function() {
+                showToast('Scale failed - server error', 'error');
+            });
+        }
+        
         function showSettings() {
             showToast('Settings coming soon', 'warning');
         }
@@ -1937,6 +2249,46 @@ $styles = $_SESSION['styles'] ?? [];
             });
         }
         
+        function showDictionaryChanges() {
+            $.get('includes/get-dictionary-changes.php', function(data) {
+                let html = '';
+                if (Array.isArray(data) && data.length > 0) {
+                    html += '<div class="unknown-words-list">';
+                    for (let i = 0; i < data.length; i += 3) {
+                        html += '<div class="uw-row">';
+                        for (let j = i; j < i + 3 && j < data.length; j++) {
+                            const item = data[j];
+                            const lineIndex = item.line - 1;
+                            html += `<div class="unknown-word-item" onclick="goToSubtitle(${lineIndex})">
+                                <div class="uw-info">
+                                    <span class="uw-line"><i class="fas fa-hashtag"></i> Line ${item.line}</span>
+                                    <span class="uw-word dc-original">${item.original}</span>
+                                    <span class="dc-arrow"><i class="fas fa-arrow-right"></i></span>
+                                    <span class="uw-word dc-replacement">${item.replacement}</span>
+                                </div>
+                                <button class="uw-play-btn" onclick="event.stopPropagation(); goToSubtitle(${lineIndex})" title="Go to line">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>`;
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                } else {
+                    html = `<div class="uw-empty">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No dictionary changes</p>
+                        <small>No words have been replaced by the dictionary</small>
+                    </div>`;
+                }
+                $('#dictionaryChangesList').html(html);
+                $('#dictionaryChangesModal').addClass('active');
+            }).fail(function() {
+                $('#dictionaryChangesList').html('<div class="uw-empty text-danger"><i class="fas fa-exclamation-triangle"></i><p>Failed to load data</p></div>');
+                $('#dictionaryChangesModal').addClass('active');
+            });
+        }
+        
         function goToSubtitle(index) {
             console.log('goToSubtitle called with index:', index);
             
@@ -1955,8 +2307,8 @@ $styles = $_SESSION['styles'] ?? [];
             
             console.log('Target time:', time, 'subtitle:', sub.text.substring(0, 30));
             
-            // Close modal - use jQuery for consistency
-            $('#unknownWordsModal').removeClass('active');
+            // Close any active modal
+            $('.modal-overlay.active').removeClass('active');
             
             // Force close any Bootstrap modals (Bootstrap 5 native API)
             document.querySelectorAll('.modal').forEach(function(el) {
