@@ -707,6 +707,8 @@
     border-radius: 2px;
 }
 
+
+
 .edit-toolbar {
     grid-column: 1 / -1;
     display: flex;
@@ -742,6 +744,15 @@
 .et-btn b, .et-btn i, .et-btn u, .et-btn s {
     font-size: 0.85rem;
 }
+
+.et-btn.et-bold { color: #3b82f6; }
+.et-btn.et-bold:hover { background: rgba(59, 130, 246, 0.15); }
+.et-btn.et-italic { color: #f59e0b; }
+.et-btn.et-italic:hover { background: rgba(245, 158, 11, 0.15); }
+.et-btn.et-underline { color: #10b981; }
+.et-btn.et-underline:hover { background: rgba(16, 185, 129, 0.15); }
+.et-btn.et-strike { color: #ef4444; }
+.et-btn.et-strike:hover { background: rgba(239, 68, 68, 0.15); }
 
 .et-btn.et-done {
     color: #34d399;
@@ -807,10 +818,10 @@
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4);
 }
 
-.edit-editor b { color: #fbbf24; }
-.edit-editor i { color: #60a5fa; }
+.edit-editor b { color: #3b82f6; }
+.edit-editor i { color: #f59e0b; }
 .edit-editor u { text-decoration-color: #34d399; }
-.edit-editor s { color: #f87171; }
+.edit-editor s { color: #ef4444; }
 
 .subtitle-actions {
     display: flex;

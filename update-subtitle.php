@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Terapkan replaceWords untuk menambahkan highlight
         require __DIR__ . '/functions.php';
-        $highlightedText = replaceWords($newText);
+        $highlightedText = assToHtmlTags(replaceWords($newText));
 
         // Kembalikan teks yang sudah di-highlight
         echo $highlightedText;

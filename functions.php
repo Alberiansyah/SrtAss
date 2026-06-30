@@ -1,8 +1,8 @@
 <?php
 require_once 'vendor/autoload.php'; // Tambahkan di awal file
 
-define('ENABLE_WORD_HIGHLIGHT', true); // Kontrol highlight
-define('ENABLE_NON_INDONESIAN_WORD_LOGGING', true); // Kontrol logging
+if (!defined('ENABLE_WORD_HIGHLIGHT')) define('ENABLE_WORD_HIGHLIGHT', true); // Kontrol highlight
+if (!defined('ENABLE_NON_INDONESIAN_WORD_LOGGING')) define('ENABLE_NON_INDONESIAN_WORD_LOGGING', true); // Kontrol logging
 
 function handleSingleRequest()
 {
@@ -492,6 +492,29 @@ function replaceWords($text, $applyHighlight = true)
             }
         }
     }
+    return $text;
+}
+
+function srtTagsToAss($text)
+{
+    $text = preg_replace('/<i>(.*?)<\/i>/', '{\\\i1}$1{\\\i0}', $text);
+    $text = preg_replace('/<b>(.*?)<\/b>/', '{\\\b1}$1{\\\b0}', $text);
+    $text = preg_replace('/<u>(.*?)<\/u>/', '{\\\u1}$1{\\\u0}', $text);
+    $text = preg_replace('/<s>(.*?)<\/s>/', '{\\\s1}$1{\\\s0}', $text);
+    return $text;
+}
+
+function assToHtmlTags($text)
+{
+    $text = str_replace('{\\i1}', '<i>', $text);
+    $text = str_replace('{\\i0}', '</i>', $text);
+    $text = str_replace('{\\i}', '</i>', $text);
+    $text = str_replace('{\\b1}', '<b>', $text);
+    $text = str_replace('{\\b0}', '</b>', $text);
+    $text = str_replace('{\\u1}', '<u>', $text);
+    $text = str_replace('{\\u0}', '</u>', $text);
+    $text = str_replace('{\\s1}', '<s>', $text);
+    $text = str_replace('{\\s0}', '</s>', $text);
     return $text;
 }
 

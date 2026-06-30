@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if (isset($_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex])) {
             $_SESSION['batch_files'][$fileIndex]['subtitles'][$subtitleIndex]['text'] = $_POST['text'];
-            $highlighted = replaceWords($_POST['text'], true);
+            $highlighted = assToHtmlTags(replaceWords($_POST['text'], true));
             echo json_encode(['success' => true, 'html' => $highlighted]);
             exit;
         }
