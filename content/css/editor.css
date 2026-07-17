@@ -2233,3 +2233,211 @@
 [data-theme="light"] * {
     scrollbar-color: #bcc4d0 #dde1e8;
 }
+
+/* ======= History Enhancements ======= */
+.history-search {
+    width: 100%;
+    margin-bottom: 0.75rem;
+}
+
+.history-search input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.history-search input:focus {
+    border-color: var(--primary);
+}
+
+.history-actions {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.history-actions .btn-delete {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.history-actions .btn-delete:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.history-actions .btn-diff {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.history-actions .btn-diff:hover {
+    opacity: 1;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.history-footer-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.75rem;
+}
+
+.history-footer-bar .total-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.history-footer-bar .btn-danger {
+    background: none;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.history-footer-bar .btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Diff Modal */
+.diff-container {
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.diff-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: var(--bg-surface-hover);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.diff-header strong {
+    color: var(--text-primary);
+}
+
+.diff-line {
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin: 1px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.diff-line.added {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+}
+
+.diff-line.removed {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    text-decoration: line-through;
+}
+
+.diff-line.modified {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+}
+
+.diff-line .diff-index {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+    min-width: 2rem;
+    display: inline-block;
+}
+
+.diff-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.diff-section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 0.5rem 0.5rem 0.25rem;
+}
+
+.diff-changes-count {
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.diff-changes-count strong {
+    color: var(--text-primary);
+}
+
+/* History compare mode */
+.ri-row.compare-mode {
+    border-left: 3px solid var(--primary);
+}
+
+.ri-row.selected-for-compare {
+    background: rgba(99, 102, 241, 0.12);
+    border-left: 3px solid var(--primary);
+}
+
+/* Light theme overrides */
+[data-theme="light"] .diff-line.added {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+[data-theme="light"] .diff-line.removed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+[data-theme="light"] .diff-line.modified {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+/* Confirm modal should stack above other modals */
+#confirmModal {
+    z-index: 3000;
+}
+
+/* Diff preview modal stacks above history modal */
+#diffPreviewModal {
+    z-index: 2500;
+}

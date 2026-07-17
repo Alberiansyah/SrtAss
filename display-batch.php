@@ -1377,17 +1377,41 @@ $dictionary = $_SESSION['dictionary'] ?? [];
 
     <!-- Version History Modal -->
     <div class="modal-overlay" id="versionHistoryModal">
-        <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-content" style="max-width: 750px;">
             <div class="modal-header">
                 <h3><i class="fas fa-history me-2"></i>Version History</h3>
                 <button class="close-btn" onclick="closeModal('versionHistoryModal')">&times;</button>
             </div>
             <div class="modal-body">
+                <div class="history-search">
+                    <input type="text" id="historySearch" placeholder="Search snapshots..." oninput="filterHistory(this.value)">
+                </div>
                 <div id="versionHistoryList"></div>
+                <div class="history-footer-bar">
+                    <span class="total-info" id="historyTotalInfo"></span>
+                    <button class="btn-danger" onclick="clearAllHistory()"><i class="fas fa-trash-alt me-1"></i>Clear All</button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('versionHistoryModal')">Close</button>
-                <button class="btn btn-primary" onclick="saveManualSnapshot(); showVersionHistory();"><i class="fas fa-camera me-2"></i>Save Snapshot</button>
+                <button class="btn btn-primary" onclick="saveManualSnapshot(); refreshHistoryList();"><i class="fas fa-camera me-2"></i>Save Snapshot</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diff Preview Modal -->
+    <div class="modal-overlay" id="diffPreviewModal">
+        <div class="modal-content" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-code-branch me-2"></i>Version Diff</h3>
+                <button class="close-btn" onclick="closeModal('diffPreviewModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="diff-header" id="diffHeader"></div>
+                <div class="diff-container" id="diffContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('diffPreviewModal')">Close</button>
             </div>
         </div>
     </div>
@@ -2994,34 +3018,88 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         function saveAutoSnapshot(label) {
             $.post('version-history.php', {action:'snapshot',label:label,file_index:currentFileIndex}, function(r){ if(r.success) updateVersionCount(); },'json');
         }
+        
+        var _historySearchTerm = '';
+        
         function showVersionHistory() {
-            var $l=$('#versionHistoryList'); $l.html('<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>'); openModal('versionHistoryModal');
-            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&t='+Date.now(), function(r){
-                if(!r.success||!r.versions||r.versions.length===0){ $l.html('<div class="uw-empty"><i class="fas fa-history"></i><p>No versions saved</p><small>Use "Snapshot" to save the current state</small></div>'); return; }
-                var h=''; r.versions.forEach(function(v){ h+='<div class="ri-row" onclick="restoreVersion('+v.id+')"><span class="ri-line">#'+v.id+'</span><span class="ri-msg" style="flex:1"><strong>'+escapeHtml(v.label)+'</strong><br><small style="color:var(--text-muted)">'+v.timestamp+' &middot; '+v.count+' lines</small></span><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); restoreVersion('+v.id+')" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="fas fa-undo"></i> Restore</button></div>'; });
+            _historySearchTerm = '';
+            $('#historySearch').val('');
+            refreshHistoryList();
+            openModal('versionHistoryModal');
+        }
+        
+        function filterHistory(term) {
+            _historySearchTerm = term;
+            refreshHistoryList();
+        }
+        
+        function refreshHistoryList() {
+            var $l=$('#versionHistoryList'); $l.html('<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>');
+            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&search='+encodeURIComponent(_historySearchTerm)+'&limit=200&t='+Date.now(), function(r){
+                if(!r.success||!r.versions||r.versions.length===0){ $l.html('<div class="uw-empty"><i class="fas fa-history"></i><p>No versions saved</p><small>Use "Snapshot" to save the current state</small></div>'); $('#historyTotalInfo').text(''); return; }
+                var h=''; r.versions.forEach(function(v){
+                    var typeLabel = v.type === 'auto' ? '<span style="color:var(--text-muted);font-size:0.65rem">[auto]</span>' : '';
+                    h+='<div class="ri-row">' +
+                        '<span class="ri-line">#'+v.id+'</span>' +
+                        '<span class="ri-msg" style="flex:1"><strong>'+escapeHtml(v.label)+'</strong> '+typeLabel+'<br><small style="color:var(--text-muted)">'+v.timestamp+' &middot; '+v.count+' lines</small></span>' +
+                        '<span class="history-actions">' +
+                            '<button class="btn-diff" onclick="event.stopPropagation(); showDiff('+v.id+')" title="Compare with current"><i class="fas fa-code-branch"></i></button>' +
+                            '<button class="btn-delete" onclick="event.stopPropagation(); deleteHistoryEntry('+v.id+')" title="Delete"><i class="fas fa-trash-alt"></i></button>' +
+                            '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); restoreVersion('+v.id+')" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="fas fa-undo"></i> Restore</button>' +
+                        '</span>' +
+                    '</div>';
+                });
                 $l.html(h);
+                $('#historyTotalInfo').text(r.total+' snapshot(s)');
             },'json').fail(function(){ $l.html('<div class="uw-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><p>Failed to load history</p></div>'); });
         }
         function restoreVersion(id) {
-            if (!confirm('Restore version #'+id+'? Current state will be saved as a snapshot.')) return;
-            $.post('version-history.php', {action:'restore',id:id,file_index:currentFileIndex}, function(r){
-                if(r.success){
-                    window.batchFiles[currentFileIndex].subtitles = r.subtitles;
-                    $.get(window.location.href.split('?')[0] + '?t=' + Date.now(), function(html) {
-                        var newList = $(html).find('#subtitleList-' + currentFileIndex).html();
-                        if (newList) $('#subtitleList-' + currentFileIndex).html(newList);
+            showConfirm('Restore Version #'+id, 'Restore this version? Current state will be saved as a snapshot.', function() {
+                $.post('version-history.php', {action:'restore',id:id,file_index:currentFileIndex}, function(r){
+                    if(r.success){
+                        window.batchFiles[currentFileIndex].subtitles = r.subtitles;
+                        refreshBatchSubtitleList();
                         calculateReadability();
-                    });
-                    showToast('Restored version #'+id, 'success');
-                    updateVersionCount();
-                    closeModal('versionHistoryModal');
-                } else {
-                    showToast('Restore failed: '+(r.error||'unknown'),'error');
-                }
-            },'json');
+                        showToast('Restored version #'+id, 'success');
+                        updateVersionCount();
+                        closeModal('versionHistoryModal');
+                    } else {
+                        showToast('Restore failed: '+(r.error||'unknown'),'error');
+                    }
+                },'json');
+            });
+        }
+        function deleteHistoryEntry(id) {
+            showConfirm('Delete Snapshot #'+id, 'Are you sure you want to delete this snapshot? This cannot be undone.', function() {
+                $.post('version-history.php', {action:'delete',id:id,file_index:currentFileIndex}, function(r){
+                    if(r.success){ showToast('Snapshot #'+id+' deleted','success'); refreshHistoryList(); updateVersionCount(); }
+                    else { showToast('Delete failed: '+(r.error||'unknown'),'error'); }
+                },'json');
+            });
+        }
+        function clearAllHistory() {
+            showConfirm('Clear All History', 'Delete ALL snapshots for this file? This cannot be undone.', function() {
+                $.post('version-history.php', {action:'clear',file_index:currentFileIndex}, function(r){
+                    if(r.success){ showToast('All history cleared','success'); refreshHistoryList(); updateVersionCount(); }
+                },'json');
+            });
+        }
+        function showDiff(id) {
+            var $c=$('#diffContainer'); var $h=$('#diffHeader');
+            $c.html('<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading diff...</p></div>'); $h.html(''); openModal('diffPreviewModal');
+            $.get('version-history.php?action=diff&id1=0&id2='+id+'&file_index='+currentFileIndex+'&t='+Date.now(), function(r){
+                if(!r.success){ $c.html('<div class="diff-empty">'+escapeHtml(r.error||'Unknown error')+'</div>'); return; }
+                $h.html('<span><strong>Current</strong> (working state)</span><span><i class="fas fa-arrow-right"></i></span><span><strong>#'+r.v2.id+'</strong> '+escapeHtml(r.v2.label)+'<br>'+r.v2.timestamp+'</span>');
+                if(r.total_changes===0){ $c.html('<div class="diff-empty"><i class="fas fa-check-circle" style="color:var(--success);font-size:2rem;display:block;margin-bottom:0.5rem"></i>No differences between current state and this version</div>'); return; }
+                var html='<div class="diff-changes-count"><strong>'+r.total_changes+'</strong> change(s)</div>';
+                if(r.added.length>0){ html+='<div class="diff-section-title"><i class="fas fa-plus-circle" style="color:#34d399"></i> Added ('+r.added.length+')</div>'; r.added.forEach(function(i){ html+='<div class="diff-line added"><span class="diff-index">#'+i.index+'</span>'+escapeHtml(i.text)+'</div>'; }); }
+                if(r.removed.length>0){ html+='<div class="diff-section-title"><i class="fas fa-minus-circle" style="color:#f87171"></i> Removed ('+r.removed.length+')</div>'; r.removed.forEach(function(i){ html+='<div class="diff-line removed"><span class="diff-index">#'+i.index+'</span>'+escapeHtml(i.text)+'</div>'; }); }
+                if(r.modified.length>0){ html+='<div class="diff-section-title"><i class="fas fa-edit" style="color:#fbbf24"></i> Modified ('+r.modified.length+')</div>'; r.modified.forEach(function(i){ html+='<div class="diff-line removed"><span class="diff-index">#'+i.index+'</span>'+escapeHtml(i.old)+'</div><div class="diff-line added"><span class="diff-index">#'+i.index+'</span>'+escapeHtml(i.new)+'</div>'; }); }
+                $c.html(html);
+            },'json').fail(function(){ $c.html('<div class="diff-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger);font-size:2rem;display:block;margin-bottom:0.5rem"></i>Failed to load diff</div>'); });
         }
         function updateVersionCount() {
-            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&t='+Date.now(), function(r){ if(r.success&&r.versions) $('#versionCount').text('('+r.versions.length+')'); },'json');
+            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&limit=1&t='+Date.now(), function(r){ if(r.success) $('#versionCount').text('('+(r.total||0)+')'); },'json');
         }
         
         // ======= Auto-Timing =======

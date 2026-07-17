@@ -59,11 +59,16 @@
 - **AJAX persistence** — no full page reload
 
 ### Version History
+- **Persistent file storage** — history saved to `data/version-history.json` (not session)
 - **Auto-snapshots** before destructive actions (reorder, timing changes)
 - **Manual snapshots** — save current state at any time
-- **Restore** — click to restore any previous version
+- **Restore** — click to restore any previous version (auto-saves current state first)
+- **Diff preview** — compare any version with current state before restoring
+- **Delete individual snapshots** — remove unwanted entries
+- **Clear all history** — per-file or global
+- **Search & filter** — filter snapshots by label
 - **Per-file history** in batch mode
-- **Max 50 versions** kept, auto-pruned
+- **Max 100 versions** kept, auto-pruned
 
 ### Readability Analysis
 - **CPS** (characters per second) — warning >15, danger >20
@@ -173,6 +178,8 @@
 ├── reorder-subtitle.php         AJAX reorder (single & batch)
 ├── version-history.php          Snapshot/restore version history
 ├── auto-timing.php              Normalize duration & fix overlaps
+├── data/
+│   └── version-history.json       Persistent version history (auto-created)
 ├── .gitignore
 ├── content/
 │   ├── css/
@@ -239,7 +246,7 @@
 
 - **Format converter** — VTT, SBV, TXT export support added
 - **Readability warnings** — CPS/CPL/duration badges, panel, and modal in both modes
-- **Version history** — snapshot/restore per-file, auto-snapshots before destructive actions
+- **Version history optimization** — file-based persistent storage (not session), diff preview, delete/clear actions, search filter, improved ID generation (no conflicts), faster batch restore
 - **Drag & drop reorder** — reorder subtitle rows without page reload
 - **ASS style preview** — toggle inline ASS tag rendering in subtitle list
 - **Auto-timing** — normalize CPS duration and fix overlapping timecodes

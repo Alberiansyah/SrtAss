@@ -270,17 +270,27 @@ function handleBatchRequest()
         $_SESSION['dictionary'] = loadDictionaryFromJson();
     }
 
-    // Pastikan version history
-    if (!isset($_SESSION['version_history'])) {
-        $_SESSION['version_history'] = [];
-        // Save initial state
+    // Pastikan version history (file-based)
+    $historyFile = __DIR__ . '/data/version-history.json';
+    if (!file_exists($historyFile)) {
+        $initData = ['next_id' => 1, 'entries' => []];
         if (isset($_SESSION['subtitles'])) {
-            $_SESSION['version_history'][] = [
+            $initData['entries'][] = [
                 'id' => 1,
                 'timestamp' => date('Y-m-d H:i:s'),
                 'label' => 'Initial state',
-                'subtitles' => $_SESSION['subtitles']
+                'type' => 'auto',
+                'subtitles' => $_SESSION['subtitles'],
+                'file_index' => -1
             ];
+            $initData['next_id'] = 2;
+        }
+        $fh = fopen($historyFile, 'c+');
+        if ($fh) {
+            flock($fh, LOCK_EX);
+            fwrite($fh, json_encode($initData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            flock($fh, LOCK_UN);
+            fclose($fh);
         }
     }
 
