@@ -55,12 +55,13 @@ function handleSingleRequest()
 
     if (isset($_POST['download'])) {
         $format = $_POST['format'] ?? '';
-        if (!in_array($format, ['srt', 'ass'], true)) {
+        if (!in_array($format, ['srt', 'ass', 'vtt', 'sbv', 'txt'], true)) {
             die('Invalid format');
         }
         $subtitles = $_SESSION['subtitles'];
         $originalFileName = pathinfo($_SESSION['uploaded_file_name'], PATHINFO_FILENAME);
         $subtitleType = $_POST['subtitle_type'] ?? 'anime';  // Default to anime if not set
+        $includeTiming = isset($_POST['include_timing']) && $_POST['include_timing'] === '1';
 
         if ($format === 'srt') {
             $content = convertToSrt($subtitles);
@@ -73,6 +74,18 @@ function handleSingleRequest()
             $content = convertToAss($subtitles, $subtitleType, $styles, $scriptInfo, $projectGarbage); // Pass subtitle type
             $fileName = $originalFileName . '.ass';
             header('Content-Type: application/x-ansi');
+        } elseif ($format === 'vtt') {
+            $content = convertToVtt($subtitles);
+            $fileName = $originalFileName . '.vtt';
+            header('Content-Type: text/vtt');
+        } elseif ($format === 'sbv') {
+            $content = convertToSbv($subtitles);
+            $fileName = $originalFileName . '.sbv';
+            header('Content-Type: text/plain');
+        } elseif ($format === 'txt') {
+            $content = convertToTxt($subtitles, $includeTiming);
+            $fileName = $originalFileName . '.txt';
+            header('Content-Type: text/plain');
         }
 
         // Bersihkan output buffer
@@ -221,6 +234,15 @@ function handleBatchRequest()
                         $projectGarbage = $file['projectGarbage'] ?? '';
                         $content = convertToAss($subtitles, $subtitleType, $styles, $scriptInfo, $projectGarbage);
                         $ext = 'ass';
+                    } elseif ($selectedFormat === 'vtt') {
+                        $content = convertToVtt($subtitles);
+                        $ext = 'vtt';
+                    } elseif ($selectedFormat === 'sbv') {
+                        $content = convertToSbv($subtitles);
+                        $ext = 'sbv';
+                    } elseif ($selectedFormat === 'txt') {
+                        $content = convertToTxt($subtitles, true);
+                        $ext = 'txt';
                     }
                     $fileName = $originalFileName . '.' . $ext;
                     $zip->addFromString($fileName, $content);
@@ -246,6 +268,20 @@ function handleBatchRequest()
     // Pastikan kamus default
     if (!isset($_SESSION['dictionary'])) {
         $_SESSION['dictionary'] = loadDictionaryFromJson();
+    }
+
+    // Pastikan version history
+    if (!isset($_SESSION['version_history'])) {
+        $_SESSION['version_history'] = [];
+        // Save initial state
+        if (isset($_SESSION['subtitles'])) {
+            $_SESSION['version_history'][] = [
+                'id' => 1,
+                'timestamp' => date('Y-m-d H:i:s'),
+                'label' => 'Initial state',
+                'subtitles' => $_SESSION['subtitles']
+            ];
+        }
     }
 
     // Proses penambahan/menghapus data kamus
@@ -895,4 +931,62 @@ function getDictionaryChanges($subtitles)
     });
 
     return $changes;
+}
+
+function stripAssTags($text)
+{
+    $text = preg_replace('/\{[^}]*\}/', '', $text);
+    $text = str_replace(['\\N', '\\n', '\\h'], ["\n", "\n", ' '], $text);
+    return $text;
+}
+
+function convertToVtt($subtitles)
+{
+    $vtt = "WEBVTT\n\n";
+    foreach ($subtitles as $subtitle) {
+        $start = str_replace(',', '.', convertTimeToSrt($subtitle['start']));
+        $end = str_replace(',', '.', convertTimeToSrt($subtitle['end']));
+        $text = replaceWords($subtitle['text'], false);
+        $text = stripAssTags($text);
+        $vtt .= $start . ' --> ' . $end . "\n";
+        $vtt .= $text . "\n\n";
+    }
+    return trim($vtt);
+}
+
+function convertToSbv($subtitles)
+{
+    $sbv = '';
+    foreach ($subtitles as $subtitle) {
+        $start = convertTimeToSrt($subtitle['start']);
+        $end = convertTimeToSrt($subtitle['end']);
+        // SRT: 00:00:01,000 → SBV: 0:00:01.000 (single digit hour if <10)
+        $start = (substr($start, 0, 2) === '00' ? '0' : substr($start, 0, 2)) . substr($start, 2);
+        $end = (substr($end, 0, 2) === '00' ? '0' : substr($end, 0, 2)) . substr($end, 2);
+        $start = str_replace(',', '.', $start);
+        $end = str_replace(',', '.', $end);
+        $text = replaceWords($subtitle['text'], false);
+        $text = stripAssTags($text);
+        $sbv .= $start . ',' . $end . "\n";
+        $sbv .= $text . "\n\n";
+    }
+    return trim($sbv);
+}
+
+function convertToTxt($subtitles, $includeTiming = true)
+{
+    $txt = '';
+    foreach ($subtitles as $index => $subtitle) {
+        $text = replaceWords($subtitle['text'], false);
+        $text = stripAssTags($text);
+        if ($includeTiming) {
+            $start = str_replace(',', '.', convertTimeToSrt($subtitle['start']));
+            $end = str_replace(',', '.', convertTimeToSrt($subtitle['end']));
+            $txt .= '[' . ($index + 1) . '] ' . $start . ' --> ' . $end . "\n";
+            $txt .= $text . "\n\n";
+        } else {
+            $txt .= $text . "\n\n";
+        }
+    }
+    return trim($txt);
 }

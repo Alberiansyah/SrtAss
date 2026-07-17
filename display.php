@@ -682,8 +682,8 @@ $styles = $_SESSION['styles'] ?? [];
                     <div class="subtitle-list" id="subtitleList">
                         <?php $_SESSION['non_indonesian_words']['single'] = []; ?>
                         <?php foreach ($subtitles as $index => $subtitle): ?>
-                        <div class="subtitle-row" data-index="<?= $index ?>">
-                            <div class="subtitle-index"><?= $index + 1 ?></div>
+                        <div class="subtitle-row" draggable="true" data-index="<?= $index ?>">
+                            <div class="subtitle-index"><i class="fas fa-grip-lines drag-handle"></i> <?= $index + 1 ?></div>
                             <div class="subtitle-times">
                                 <span class="time-start"><?= htmlspecialchars($subtitle['start']) ?></span>
                                 <span class="time-end"><?= htmlspecialchars($subtitle['end']) ?></span>
@@ -692,6 +692,7 @@ $styles = $_SESSION['styles'] ?? [];
                                 <div class="subtitle-original" data-index="<?= $index ?>"><?= highlightIndonesiaWords($subtitle['text'], $index + 1) ?></div>
                                 <div class="subtitle-modified" data-index="<?= $index ?>"><?= replaceWords(htmlspecialchars($subtitle['text'])) ?></div>
                             </div>
+                            <div class="subtitle-warnings"></div>
                             <div class="subtitle-actions">
                                 <button class="play-from-btn" data-time="<?= $subtitle['start'] ?>" title="Play from here">
                                     <i class="fas fa-play"></i>
@@ -726,6 +727,11 @@ $styles = $_SESSION['styles'] ?? [];
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop video here or click</span>
                             <input type="file" id="videoFileInput" accept="video/*">
+                        </div>
+                        <div class="form-group" style="margin-top:0.5rem">
+                            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.75rem">
+                                <input type="checkbox" id="stylePreviewToggle"> ASS Style Preview
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -786,7 +792,15 @@ $styles = $_SESSION['styles'] ?? [];
                             <select id="exportFormat">
                                 <option value="ass" selected>ASS (Advanced SubStation Alpha)</option>
                                 <option value="srt">SRT (SubRip)</option>
+                                <option value="vtt">VTT (WebVTT)</option>
+                                <option value="sbv">SBV (YouTube)</option>
+                                <option value="txt">TXT (Plain Text)</option>
                             </select>
+                            <div class="form-group" id="txtTimingOption" style="display:none;">
+                                <label style="font-size:0.75rem;color:var(--text-secondary);display:flex;align-items:center;gap:0.4rem;cursor:pointer">
+                                    <input type="checkbox" id="includeTiming" checked> Include timing timestamps
+                                </label>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Subtitle Type</label>
@@ -827,6 +841,38 @@ $styles = $_SESSION['styles'] ?? [];
                         <button class="btn btn-info btn-sm w-100" onclick="showDictionaryChanges()">
                             <i class="fas fa-list me-2"></i>View All
                         </button>
+                    </div>
+                </div>
+
+                <!-- Readability Panel -->
+                <div class="panel-section collapsed">
+                    <div class="panel-header" onclick="togglePanel(this)">
+                        <h4><i class="fas fa-eye me-2"></i>Readability <span id="readabilityCount" style="font-weight:400;font-size:0.7rem;color:var(--text-muted)"></span></h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="panel-content">
+                        <div id="readabilitySummary" class="readability-summary"></div>
+                        <button class="btn btn-warning btn-sm w-100" onclick="showReadabilityIssues()">
+                            <i class="fas fa-list me-2"></i>View Issues
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Version History Panel -->
+                <div class="panel-section">
+                    <div class="panel-header" onclick="togglePanel(this)">
+                        <h4><i class="fas fa-history me-2"></i>History <span id="versionCount" style="font-weight:400;font-size:0.7rem;color:var(--text-muted)"></span></h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="panel-content">
+                        <div style="display:flex;gap:0.3rem">
+                            <button class="btn btn-sm btn-secondary" onclick="saveManualSnapshot()" style="flex:1;font-size:0.7rem">
+                                <i class="fas fa-camera me-1"></i>Snapshot
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="showVersionHistory()" style="flex:1;font-size:0.7rem">
+                                <i class="fas fa-list me-1"></i>Versions
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -882,6 +928,25 @@ $styles = $_SESSION['styles'] ?? [];
                         <button class="btn btn-primary" onclick="applyTimingScale()">Scale</button>
                     </div>
                     <small style="color:var(--text-muted);font-size:0.75rem">Current: <span id="timingCurrentDur">--:--:--</span></small>
+                </div>
+                <hr style="border-color:var(--border-color);margin:0.75rem 0">
+                <div>
+                    <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">Auto-Timing</label>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <label style="font-size:0.75rem;color:var(--text-muted);min-width:70px">Target CPS:</label>
+                            <input type="number" id="autoTargetCps" value="15" min="5" max="30" class="form-control" style="width:70px;padding:0.3rem;font-size:0.75rem">
+                        </div>
+                        <div style="display:flex;gap:0.3rem">
+                            <button class="btn btn-sm btn-warning" onclick="autoNormalizeDuration()" style="flex:1;font-size:0.7rem;padding:0.3rem 0.4rem">
+                                <i class="fas fa-clock me-1"></i>Normalize
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="autoFixOverlaps()" style="flex:1;font-size:0.7rem;padding:0.3rem 0.4rem">
+                                <i class="fas fa-compress me-1"></i>Fix Overlaps
+                            </button>
+                        </div>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.7rem">Adjusts duration based on reading speed. Detects overlap issues.</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1017,6 +1082,44 @@ $styles = $_SESSION['styles'] ?? [];
         </div>
     </div>
 
+    <!-- Readability Modal -->
+    <div class="modal-overlay" id="readabilityModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye me-2"></i>Readability Issues</h3>
+                <button class="close-btn" onclick="closeModal('readabilityModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="readabilityIssuesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('readabilityModal')">Close</button>
+                <button class="btn btn-warning" onclick="closeModal('readabilityModal')">
+                    <i class="fas fa-check me-2"></i>OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History Modal -->
+    <div class="modal-overlay" id="versionHistoryModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-history me-2"></i>Version History</h3>
+                <button class="close-btn" onclick="closeModal('versionHistoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="versionHistoryList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('versionHistoryModal')">Close</button>
+                <button class="btn btn-primary" onclick="saveManualSnapshot(); showVersionHistory();">
+                    <i class="fas fa-camera me-2"></i>Save Snapshot
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Dictionary Changes Modal -->
     <div class="modal-overlay" id="dictionaryChangesModal">
         <div class="modal-content" style="max-width: 1000px;">
@@ -1043,6 +1146,10 @@ $styles = $_SESSION['styles'] ?? [];
         let currentTime = 0;
         let duration = 0;
 
+        function escapeHtml(text) {
+            return $('<div>').text(text).html();
+        }
+        
         $(document).ready(function() {
             videoPlayer = $('#videoPlayer')[0];
             
@@ -1218,15 +1325,11 @@ $styles = $_SESSION['styles'] ?? [];
                 return timeStr.replace(',', '.');
             }
             
-            function assToHtml(text) {
-                return text
-                    .replace(/<[^>]*>/g, '')
+            function assToHtml(text, enableStylePreview) {
+                // Use global assToHtml which supports style preview
+                return window.assToHtml ? window.assToHtml(text, enableStylePreview) : text
                     .replace(/\\N/g, '\n')
                     .replace(/\\n/g, '\n')
-                    .replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>')
-                    .replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>')
-                    .replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>')
-                    .replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>')
                     .replace(/\{[^}]*\}/g, '')
                     .replace(/\n/g, '<br>');
             }
@@ -1257,7 +1360,8 @@ $styles = $_SESSION['styles'] ?? [];
                 }
                 
                 if (activeSubtitle) {
-                    overlay.innerHTML = '<div class="subtitle-display">' + activeSubtitle + '</div>';
+                    var useStylePreview = localStorage.getItem('srtass_style_preview') === 'true';
+                    overlay.innerHTML = '<div class="subtitle-display' + (useStylePreview ? ' style-preview' : '') + '">' + assToHtml(activeSubtitle, useStylePreview) + '</div>';
                     overlay.style.display = 'block';
                 } else {
                     overlay.innerHTML = '';
@@ -1310,6 +1414,55 @@ $styles = $_SESSION['styles'] ?? [];
                     $bar.removeClass('show');
                 }
             }
+            
+            // ======= Drag & Drop Reorder =======
+            let dragFromIndex = null;
+            
+            $('.subtitle-list').on('dragstart', '.subtitle-row', function(e) {
+                dragFromIndex = $(this).data('index');
+                $(this).addClass('dragging');
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+                e.originalEvent.dataTransfer.setData('text/plain', dragFromIndex);
+            });
+            
+            $('.subtitle-list').on('dragend', '.subtitle-row', function() {
+                $('.subtitle-row').removeClass('dragging drag-over');
+                dragFromIndex = null;
+            });
+            
+            $('.subtitle-list').on('dragover', '.subtitle-row', function(e) {
+                e.preventDefault();
+                e.originalEvent.dataTransfer.dropEffect = 'move';
+            });
+            
+            $('.subtitle-list').on('dragenter', '.subtitle-row', function(e) {
+                e.preventDefault();
+                $(this).addClass('drag-over');
+            });
+            
+            $('.subtitle-list').on('dragleave', '.subtitle-row', function() {
+                $(this).removeClass('drag-over');
+            });
+            
+            $('.subtitle-list').on('drop', '.subtitle-row', function(e) {
+                e.preventDefault();
+                $(this).removeClass('drag-over');
+                const toIndex = $(this).data('index');
+                if (dragFromIndex !== null && dragFromIndex !== toIndex) {
+                    saveAutoSnapshot('Before reorder');
+                    saveUndoState();
+                    $.post('reorder-subtitle.php', { from_index: dragFromIndex, to_index: toIndex }, function(resp) {
+                        if (resp.success) {
+                            window.subtitleData = resp.subtitles;
+                            refreshSubtitleList();
+                            showToast('Subtitle moved', 'success');
+                        } else {
+                            showToast('Reorder failed', 'error');
+                        }
+                    }, 'json');
+                }
+                dragFromIndex = null;
+            });
             
             function applyBatchFormat(cmd, openTag, closeTag) {
                 window.saveUndoState();
@@ -1365,6 +1518,7 @@ $styles = $_SESSION['styles'] ?? [];
             
             function deleteSubtitle(index) {
                 showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', function() {
+                    saveAutoSnapshot('Before delete #' + (parseInt(index) + 1));
                     saveUndoState();
                     $.post('delete-subtitle.php', { index: index }, function(response) {
                         if (response.success) {
@@ -1471,12 +1625,8 @@ $styles = $_SESSION['styles'] ?? [];
                 });
             }
             
-            function escapeHtml(text) {
-                return $('<div>').text(text).html();
-            }
-            
             // ======= Refresh Subtitle List (no page reload) =======
-            function refreshSubtitleList() {
+            window.refreshSubtitleList = function refreshSubtitleList() {
                 clearSelection();
                 $.get(window.location.href.split('?')[0] + '?t=' + Date.now(), function(html) {
                     var $html = $(html);
@@ -1496,6 +1646,7 @@ $styles = $_SESSION['styles'] ?? [];
                         }
                     }
                     renderTimelineBlocks();
+                    calculateReadability();
                 });
             }
             
@@ -1790,14 +1941,84 @@ $styles = $_SESSION['styles'] ?? [];
             });
         }
         
-        function assToHtml(text) {
-            return text
-                .replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>')
-                .replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>')
-                .replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>')
-                .replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>')
-                .replace(/\{[^}]*\}/g, '')
-                .replace(/\n/g, '<br>');
+        function assToHtml(text, enableStylePreview) {
+            var result = text;
+            
+            if (enableStylePreview) {
+                // Extended ASS tag parsing for style preview
+                // Order matters: specific → general
+                
+                // Font color: {\c&HBBGGRR&} (BGR format)
+                result = result.replace(/\{\\c&H([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})&?\}/g, function(m, b, g, r) {
+                    return '<span style="color:#' + r + g + b + '">';
+                });
+                result = result.replace(/\{\\c\}/g, '</span>');
+                
+                // Font size: {\fs20}
+                result = result.replace(/\{\\fs(\d+)\}/g, '<span style="font-size:$1px">');
+                
+                // Font name: {\fnArial}
+                result = result.replace(/\{\\fn([^}]+)\}/g, '<span style="font-family:\'$1\'">');
+                
+                // Bold: {\b1}
+                result = result.replace(/\{\\b(\d+)\}/g, function(m, v) {
+                    return v === '1' ? '<b>' : '</b>';
+                });
+                
+                // Italic
+                result = result.replace(/\{\\i(\d+)\}/g, function(m, v) {
+                    return v === '1' ? '<i>' : '</i>';
+                });
+                
+                // Underline
+                result = result.replace(/\{\\u(\d+)\}/g, function(m, v) {
+                    return v === '1' ? '<u>' : '</u>';
+                });
+                
+                // Strikethrough
+                result = result.replace(/\{\\s(\d+)\}/g, function(m, v) {
+                    return v === '1' ? '<s>' : '</s>';
+                });
+                
+                // Border/outline: {\bord2}
+                result = result.replace(/\{\\bord(\d+(?:\.\d+)?)\}/g, function(m, v) {
+                    return '<span style="text-shadow:0 0 ' + (parseFloat(v) * 2) + 'px #000">';
+                });
+                
+                // Shadow: {\shad2}
+                result = result.replace(/\{\\shad(\d+(?:\.\d+)?)\}/g, function(m, v) {
+                    var offset = parseFloat(v);
+                    return '<span style="text-shadow:' + offset + 'px ' + offset + 'px ' + (offset * 2) + 'px #000">';
+                });
+                
+                // Alignment: {\an8} (1=bottom-left, 2=bottom-center, 3=bottom-right, 7=top-left, 8=top-center, 9=top-right)
+                result = result.replace(/\{\\an(\d+)\}/g, function(m, v) {
+                    var alignMap = {'1':'left','2':'center','3':'right','4':'left','5':'center','6':'right','7':'left','8':'center','9':'right'};
+                    var valignMap = {'1':'','2':'','3':'','4':'','5':'','6':'','7':'','8':'','9':''};
+                    return '<span style="display:block;text-align:' + (alignMap[v] || 'center') + '">';
+                });
+            }
+            
+            // Bold (always convert for basic formatting)
+            result = result.replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>');
+            result = result.replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>');
+            result = result.replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>');
+            result = result.replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>');
+            
+            // Remove any remaining ASS tags
+            result = result.replace(/\{[^}]*\}/g, '');
+            
+            // Close any unclosed tags from style preview
+            if (enableStylePreview) {
+                // Count open spans and close them
+                var openCount = (result.match(/<span/g) || []).length;
+                var closeCount = (result.match(/<\/span>/g) || []).length;
+                for (var i = closeCount; i < openCount; i++) {
+                    result += '</span>';
+                }
+            }
+            
+            return result.replace(/\n/g, '<br>');
         }
         
         function htmlToAss(html) {
@@ -1838,6 +2059,7 @@ $styles = $_SESSION['styles'] ?? [];
             
             row.addClass('editing');
             row.find('.subtitle-text-container').hide();
+            row.find('.subtitle-warnings').hide();
             row.find('.subtitle-actions').hide();
             row.find('.subtitle-index').hide();
             row.find('.subtitle-times').hide();
@@ -1889,6 +2111,7 @@ $styles = $_SESSION['styles'] ?? [];
                 editor.remove();
                 row.removeClass('editing');
                 row.find('.subtitle-text-container').show();
+                row.find('.subtitle-warnings').show();
                 row.find('.subtitle-actions').show();
                 row.find('.subtitle-index').show();
                 row.find('.subtitle-times').show();
@@ -1959,11 +2182,29 @@ $styles = $_SESSION['styles'] ?? [];
             form.append($('<input name="download">'));
             form.append($('<input name="format">').val(format));
             form.append($('<input name="subtitle_type">').val(subtitleType));
+            if (format === 'txt') {
+                form.append($('<input name="include_timing">').val($('#includeTiming').is(':checked') ? '1' : '0'));
+            }
             
             $('body').append(form);
             form.submit();
             form.remove();
         }
+        
+        // Show/hide TXT timing option on format change
+        $(document).ready(function() {
+            $('#exportFormat').on('change', function() {
+                $('#txtTimingOption').toggle($(this).val() === 'txt');
+            });
+            
+            // Style preview toggle
+            var stylePreviewEnabled = localStorage.getItem('srtass_style_preview') === 'true';
+            $('#stylePreviewToggle').prop('checked', stylePreviewEnabled);
+            $('#stylePreviewToggle').on('change', function() {
+                localStorage.setItem('srtass_style_preview', $(this).is(':checked') ? 'true' : 'false');
+                showToast('Style preview ' + ($(this).is(':checked') ? 'enabled' : 'disabled'), 'info');
+            });
+        });
         
         function toggleFullscreen() {
             const videoWrapper = document.getElementById('videoWrapper');
@@ -2358,12 +2599,243 @@ $styles = $_SESSION['styles'] ?? [];
             }, 200);
         }
         
+        // ======= Auto-Split Long Lines =======
         function exportUnknownWords() {
             window.location.href = 'includes/export-words.php';
         }
         
+        // ======= Readability Warnings =======
+        function calculateReadability() {
+            let total = 0, cpsIssues = 0, cplIssues = 0, durIssues = 0;
+            const issues = [];
+            
+            $('.subtitle-row').each(function() {
+                const $row = $(this);
+                const startStr = $row.find('.time-start').text().trim();
+                const endStr = $row.find('.time-end').text().trim();
+                const text = $row.find('.subtitle-modified').text().trim();
+                const index = $row.data('index');
+                
+                if (!startStr || !endStr) return;
+                
+                const start = parseTime(startStr);
+                const end = parseTime(endStr);
+                const duration = end - start;
+                const cleanText = text.replace(/\{[^}]*\}/g, '').replace(/\\[nN]/g, ' ');
+                const charCount = cleanText.length;
+                const cps = duration > 0 ? charCount / duration : 0;
+                const cpl = charCount;
+                
+                // Remove existing warnings
+                $row.removeClass('has-warning has-danger');
+                $row.find('.warning-badge').remove();
+                
+                const rowWarnings = [];
+                
+                if (cps > 20) {
+                    rowWarnings.push({type:'cps', severity:'danger', msg:'CPS ' + cps.toFixed(1)});
+                    cpsIssues++;
+                } else if (cps > 15) {
+                    rowWarnings.push({type:'cps', severity:'warning', msg:'CPS ' + cps.toFixed(1)});
+                    cpsIssues++;
+                }
+                if (cpl > 42) {
+                    rowWarnings.push({type:'cpl', severity:'warning', msg:cpl + ' chars'});
+                    cplIssues++;
+                }
+                if (duration < 1) {
+                    rowWarnings.push({type:'duration', severity:'danger', msg:(duration).toFixed(1) + 's'});
+                    durIssues++;
+                } else if (duration < 1.5) {
+                    rowWarnings.push({type:'duration', severity:'warning', msg:(duration).toFixed(1) + 's'});
+                    durIssues++;
+                }
+                
+                if (rowWarnings.length > 0) {
+                    total++;
+                    const hasDanger = rowWarnings.some(w => w.severity === 'danger');
+                    $row.addClass(hasDanger ? 'has-danger' : 'has-warning');
+                    
+                    // Add warning badge
+                    const $warnings = $row.find('.subtitle-warnings');
+                    $warnings.empty();
+                    rowWarnings.forEach(function(w) {
+                        $warnings.append('<span class="warning-badge badge-' + w.type + '" title="' + w.msg + '"><i class="fas fa-exclamation-' + (w.severity === 'danger' ? 'circle' : 'triangle') + '"></i> ' + w.msg + '</span>');
+                    });
+                    
+                    issues.push({index: index + 1, warnings: rowWarnings});
+                }
+            });
+            
+            // Update sidebar summary
+            const $summary = $('#readabilitySummary');
+            $('#readabilityCount').text('(' + total + ' issues)');
+            
+            if (total === 0) {
+                $summary.html('<div style="text-align:center;padding:0.5rem;color:var(--success);font-size:0.8rem"><i class="fas fa-check-circle"></i> No issues</div>');
+            } else {
+                $summary.html(
+                    '<div class="r-item"><div class="r-value" style="color:' + (cpsIssues > 0 ? '#ef4444' : '#10b981') + '">' + cpsIssues + '</div><div class="r-label">High CPS</div></div>' +
+                    '<div class="r-item"><div class="r-value" style="color:' + (cplIssues > 0 ? '#f59e0b' : '#10b981') + '">' + cplIssues + '</div><div class="r-label">Long Lines</div></div>' +
+                    '<div class="r-item"><div class="r-value" style="color:' + (durIssues > 0 ? '#ef4444' : '#10b981') + '">' + durIssues + '</div><div class="r-label">Short Dur.</div></div>' +
+                    '<div class="r-item"><div class="r-value">' + total + '</div><div class="r-label">Total</div></div>'
+                );
+            }
+            
+            window._readabilityIssues = issues;
+        }
+        
+        function showReadabilityIssues() {
+            const issues = window._readabilityIssues || [];
+            const $list = $('#readabilityIssuesList');
+            
+            if (issues.length === 0) {
+                $list.html('<div class="uw-empty"><i class="fas fa-check-circle" style="color:var(--success)"></i><p>No readability issues found!</p></div>');
+            } else {
+                let html = '';
+                issues.forEach(function(issue) {
+                    const icons = issue.warnings.map(function(w) {
+                        return '<span class="warning-badge badge-' + w.type + '"><i class="fas fa-exclamation-' + (w.severity === 'danger' ? 'circle' : 'triangle') + '"></i> ' + w.msg + '</span>';
+                    }).join(' ');
+                    html += '<div class="ri-row" onclick="navigateToLine(' + (issue.index - 1) + ')">' +
+                        '<span class="ri-line">#' + issue.index + '</span>' +
+                        '<span class="ri-msg">' + icons + '</span>' +
+                        '<i class="fas fa-arrow-right ri-icon" style="color:var(--text-muted)"></i>' +
+                    '</div>';
+                });
+                $list.html(html);
+            }
+            
+            openModal('readabilityModal');
+        }
+        
+        // ======= Auto-Timing =======
+        function autoNormalizeDuration() {
+            var cps = parseInt($('#autoTargetCps').val()) || 15;
+            saveAutoSnapshot('Before normalize duration');
+            saveUndoState();
+            showToast('Normalizing durations...', 'warning');
+            $.post('auto-timing.php', { action: 'normalize', target_cps: cps }, function(resp) {
+                if (resp.success) {
+                    window.subtitleData = resp.subtitles;
+                    refreshSubtitleList();
+                    showToast('Adjusted ' + (resp.adjusted || 0) + ' subtitle(s)', 'success');
+                } else {
+                    showToast('Normalize failed: ' + (resp.error || 'unknown'), 'error');
+                }
+            }, 'json').fail(function() {
+                showToast('Normalize failed - server error', 'error');
+            });
+        }
+        
+        function autoFixOverlaps() {
+            saveAutoSnapshot('Before fix overlaps');
+            saveUndoState();
+            showToast('Fixing overlaps...', 'warning');
+            $.post('auto-timing.php', { action: 'fix_overlaps' }, function(resp) {
+                if (resp.success) {
+                    window.subtitleData = resp.subtitles;
+                    refreshSubtitleList();
+                    showToast('Fixed ' + (resp.fixed || 0) + ' overlap(s)', 'success');
+                } else {
+                    showToast('Fix overlaps failed: ' + (resp.error || 'unknown'), 'error');
+                }
+            }, 'json').fail(function() {
+                showToast('Fix overlaps failed - server error', 'error');
+            });
+        }
+        
+        function parseTime(str) {
+            str = str.replace(',', '.');
+            const parts = str.split(':');
+            if (parts.length === 3) {
+                return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+            }
+            return 0;
+        }
+        
+        function navigateToLine(index) {
+            closeModal('readabilityModal');
+            const $row = $('.subtitle-row[data-index="' + index + '"]');
+            if ($row.length) {
+                $row.click();
+                $row[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        // ======= Version History =======
+        function saveManualSnapshot() {
+            var label = prompt('Snapshot name:', 'Snapshot ' + new Date().toLocaleTimeString());
+            if (!label) return;
+            $.post('version-history.php', { action: 'snapshot', label: label }, function(resp) {
+                if (resp.success) {
+                    showToast('Snapshot saved', 'success');
+                    updateVersionCount();
+                }
+            }, 'json');
+        }
+        
+        function saveAutoSnapshot(label) {
+            $.post('version-history.php', { action: 'snapshot', label: label }, function(resp) {
+                if (resp.success) {
+                    updateVersionCount();
+                }
+            }, 'json');
+        }
+        
+        function showVersionHistory() {
+            var $list = $('#versionHistoryList');
+            $list.html('<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>');
+            openModal('versionHistoryModal');
+            
+            $.get('version-history.php?action=list&t=' + Date.now(), function(resp) {
+                if (!resp.success || !resp.versions || resp.versions.length === 0) {
+                    $list.html('<div class="uw-empty"><i class="fas fa-history"></i><p>No versions saved</p><small>Use "Snapshot" to save the current state</small></div>');
+                    return;
+                }
+                var html = '';
+                resp.versions.forEach(function(v) {
+                    html += '<div class="ri-row" onclick="restoreVersion(' + v.id + ')">' +
+                        '<span class="ri-line">#' + v.id + '</span>' +
+                        '<span class="ri-msg" style="flex:1"><strong>' + escapeHtml(v.label) + '</strong><br><small style="color:var(--text-muted)">' + v.timestamp + ' &middot; ' + v.count + ' lines</small></span>' +
+                        '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); restoreVersion(' + v.id + ')" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="fas fa-undo"></i> Restore</button>' +
+                    '</div>';
+                });
+                $list.html(html);
+            }, 'json').fail(function() {
+                $list.html('<div class="uw-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><p>Failed to load history</p></div>');
+            });
+        }
+        
+        function restoreVersion(id) {
+            if (!confirm('Restore version #' + id + '? Current state will be saved as a snapshot.')) return;
+            $.post('version-history.php', { action: 'restore', id: id }, function(resp) {
+                if (resp.success) {
+                    window.subtitleData = resp.subtitles;
+                    refreshSubtitleList();
+                    showToast('Restored version #' + id, 'success');
+                    updateVersionCount();
+                    closeModal('versionHistoryModal');
+                } else {
+                    showToast('Restore failed: ' + (resp.error || 'unknown'), 'error');
+                }
+            }, 'json');
+        }
+        
+        function updateVersionCount() {
+            $.get('version-history.php?action=list&t=' + Date.now(), function(resp) {
+                if (resp.success && resp.versions) {
+                    $('#versionCount').text('(' + resp.versions.length + ')');
+                }
+            }, 'json');
+        }
+        
         function closeModal(id) {
             $('#' + id).removeClass('active');
+        }
+        
+        function openModal(id) {
+            $('#' + id).addClass('active');
         }
         
         function clearSession() {
@@ -2473,6 +2945,8 @@ $styles = $_SESSION['styles'] ?? [];
                     icon.className = 'fas fa-chevron-up';
                 }
             }
+            calculateReadability();
+            updateVersionCount();
         });
     </script>
     <?php include __DIR__ . '/includes/modal-words.php'; ?>

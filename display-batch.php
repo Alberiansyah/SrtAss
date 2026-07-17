@@ -959,8 +959,8 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                             role="tabpanel">
                             <div class="subtitle-list" id="subtitleList-<?= $fileIndex ?>">
                                 <?php foreach ($file['subtitles'] as $index => $subtitle): ?>
-                                <div class="subtitle-row" data-file="<?= $fileIndex ?>" data-index="<?= $index ?>">
-                                    <div class="subtitle-index"><?= $index + 1 ?></div>
+                                <div class="subtitle-row" draggable="true" data-file="<?= $fileIndex ?>" data-index="<?= $index ?>">
+                                    <div class="subtitle-index"><i class="fas fa-grip-lines drag-handle"></i> <?= $index + 1 ?></div>
                                     <div class="subtitle-times">
                                         <span class="time-start"><?= htmlspecialchars($subtitle['start']) ?></span>
                                         <span class="time-end"><?= htmlspecialchars($subtitle['end']) ?></span>
@@ -969,6 +969,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                                         <div class="subtitle-original" data-file="<?= $fileIndex ?>" data-index="<?= $index ?>"><?= highlightIndonesiaWords($subtitle['text'], $index + 1, null, $fileIndex) ?></div>
                                         <div class="subtitle-modified" data-file="<?= $fileIndex ?>" data-index="<?= $index ?>"><?= replaceWords(htmlspecialchars($subtitle['text'])) ?></div>
                                     </div>
+                                    <div class="subtitle-warnings"></div>
                                     <div class="subtitle-actions">
                                         <button class="play-from-btn" data-time="<?= $subtitle['start'] ?>" title="Play from here">
                                             <i class="fas fa-play"></i>
@@ -1009,6 +1010,11 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop video here or click</span>
                             <input type="file" id="videoFileInput" accept="video/*">
+                        </div>
+                        <div class="form-group" style="margin-top:0.5rem">
+                            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.75rem">
+                                <input type="checkbox" id="stylePreviewToggle"> ASS Style Preview
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -1067,8 +1073,11 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                         <div class="form-group">
                             <label>Format</label>
                             <select id="exportFormat">
-                                <option value="ass" selected>ASS (Advanced)</option>
+                                <option value="ass" selected>ASS (Advanced SubStation Alpha)</option>
                                 <option value="srt">SRT (SubRip)</option>
+                                <option value="vtt">VTT (WebVTT)</option>
+                                <option value="sbv">SBV (YouTube)</option>
+                                <option value="txt">TXT (Plain Text)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1110,6 +1119,38 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                         <button class="btn btn-info btn-sm w-100" onclick="showDictionaryChanges()">
                             <i class="fas fa-list me-2"></i>View All
                         </button>
+                    </div>
+                </div>
+
+                <!-- Readability Panel -->
+                <div class="panel-section collapsed">
+                    <div class="panel-header" onclick="togglePanel(this)">
+                        <h4><i class="fas fa-eye me-2"></i>Readability <span id="readabilityCount" style="font-weight:400;font-size:0.7rem;color:var(--text-muted)"></span></h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="panel-content">
+                        <div id="readabilitySummary" class="readability-summary"></div>
+                        <button class="btn btn-warning btn-sm w-100" onclick="showReadabilityIssues()">
+                            <i class="fas fa-list me-2"></i>View Issues
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Version History Panel -->
+                <div class="panel-section">
+                    <div class="panel-header" onclick="togglePanel(this)">
+                        <h4><i class="fas fa-history me-2"></i>History <span id="versionCount" style="font-weight:400;font-size:0.7rem;color:var(--text-muted)"></span></h4>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="panel-content">
+                        <div style="display:flex;gap:0.3rem">
+                            <button class="btn btn-sm btn-secondary" onclick="saveManualSnapshot()" style="flex:1;font-size:0.7rem">
+                                <i class="fas fa-camera me-1"></i>Snapshot
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="showVersionHistory()" style="flex:1;font-size:0.7rem">
+                                <i class="fas fa-list me-1"></i>Versions
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1165,6 +1206,25 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                         <button class="btn btn-primary" onclick="applyTimingScale()">Scale</button>
                     </div>
                     <small style="color:var(--text-muted);font-size:0.75rem">Current: <span id="timingCurrentDur">--:--:--</span></small>
+                </div>
+                <hr style="border-color:var(--border-color);margin:0.75rem 0">
+                <div>
+                    <label style="font-size:0.85rem;color:var(--text-secondary);display:block;margin-bottom:0.3rem">Auto-Timing</label>
+                    <div style="display:flex;flex-direction:column;gap:0.4rem">
+                        <div style="display:flex;align-items:center;gap:0.5rem">
+                            <label style="font-size:0.75rem;color:var(--text-muted);min-width:70px">Target CPS:</label>
+                            <input type="number" id="autoTargetCps" value="15" min="5" max="30" class="form-control" style="width:70px;padding:0.3rem;font-size:0.75rem">
+                        </div>
+                        <div style="display:flex;gap:0.3rem">
+                            <button class="btn btn-sm btn-warning" onclick="autoNormalizeDuration()" style="flex:1;font-size:0.7rem;padding:0.3rem 0.4rem">
+                                <i class="fas fa-clock me-1"></i>Normalize
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="autoFixOverlaps()" style="flex:1;font-size:0.7rem;padding:0.3rem 0.4rem">
+                                <i class="fas fa-compress me-1"></i>Fix Overlaps
+                            </button>
+                        </div>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.7rem">Adjusts duration based on reading speed. Detects overlap issues.</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1298,6 +1358,40 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         </div>
     </div>
 
+    <!-- Readability Modal -->
+    <div class="modal-overlay" id="readabilityModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye me-2"></i>Readability Issues</h3>
+                <button class="close-btn" onclick="closeModal('readabilityModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="readabilityIssuesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('readabilityModal')">Close</button>
+                <button class="btn btn-warning" onclick="closeModal('readabilityModal')"><i class="fas fa-check me-2"></i>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History Modal -->
+    <div class="modal-overlay" id="versionHistoryModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-history me-2"></i>Version History</h3>
+                <button class="close-btn" onclick="closeModal('versionHistoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="versionHistoryList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('versionHistoryModal')">Close</button>
+                <button class="btn btn-primary" onclick="saveManualSnapshot(); showVersionHistory();"><i class="fas fa-camera me-2"></i>Save Snapshot</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Dictionary Changes Modal -->
     <div class="modal-overlay" id="dictionaryChangesModal">
         <div class="modal-content" style="max-width: 1000px;">
@@ -1402,7 +1496,9 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 $('.video-placeholder').hide();
                 
                 // Generate subtitle track for current file
-                generateVideoSubtitleTrack(currentFileIndex);
+                videoPlayer.onloadedmetadata = function() {
+                    generateVideoSubtitleTrack(currentFileIndex);
+                };
                 
                 showToast('Video loaded successfully', 'success');
             }
@@ -1417,15 +1513,10 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 return timeStr.replace(',', '.');
             }
             
-            function assToHtml(text) {
-                return text
-                    .replace(/<[^>]*>/g, '')
+            function assToHtml(text, enableStylePreview) {
+                return window.assToHtml ? window.assToHtml(text, enableStylePreview) : text
                     .replace(/\\N/g, '\n')
                     .replace(/\\n/g, '\n')
-                    .replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>')
-                    .replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>')
-                    .replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>')
-                    .replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>')
                     .replace(/\{[^}]*\}/g, '')
                     .replace(/\n/g, '<br>');
             }
@@ -1462,7 +1553,8 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 }
                 
                 if (activeSubtitle) {
-                    overlay.innerHTML = '<div class="subtitle-display">' + activeSubtitle + '</div>';
+                    var useStylePreview = localStorage.getItem('srtass_style_preview') === 'true';
+                    overlay.innerHTML = '<div class="subtitle-display' + (useStylePreview ? ' style-preview' : '') + '">' + assToHtml(activeSubtitle, useStylePreview) + '</div>';
                     overlay.style.display = 'block';
                 } else {
                     overlay.innerHTML = '';
@@ -1973,6 +2065,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 if (panel) panel.classList.add('show', 'active');
                 
                 renderTimelineBlocks();
+                calculateReadability();
                 
                 if (videoPlayer && videoPlayer.src) {
                     generateVideoSubtitleTrack(currentFileIndex);
@@ -2111,14 +2204,32 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             });
         }
         
-        function assToHtml(text) {
-            return text
-                .replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>')
-                .replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>')
-                .replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>')
-                .replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>')
-                .replace(/\{[^}]*\}/g, '')
-                .replace(/\n/g, '<br>');
+        function assToHtml(text, enableStylePreview) {
+            var result = text;
+            if (enableStylePreview) {
+                result = result.replace(/\{\\c&H([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})&?\}/g, function(m,b,g,r){return '<span style="color:#'+r+g+b+'">';});
+                result = result.replace(/\{\\c\}/g, '</span>');
+                result = result.replace(/\{\\fs(\d+)\}/g, '<span style="font-size:$1px">');
+                result = result.replace(/\{\\fn([^}]+)\}/g, '<span style="font-family:\'$1\'">');
+                result = result.replace(/\{\\b(\d+)\}/g, function(m,v){return v==='1'?'<b>':'</b>';});
+                result = result.replace(/\{\\i(\d+)\}/g, function(m,v){return v==='1'?'<i>':'</i>';});
+                result = result.replace(/\{\\u(\d+)\}/g, function(m,v){return v==='1'?'<u>':'</u>';});
+                result = result.replace(/\{\\s(\d+)\}/g, function(m,v){return v==='1'?'<s>':'</s>';});
+                result = result.replace(/\{\\bord([\d.]+)\}/g, function(m,v){return '<span style="text-shadow:0 0 '+(parseFloat(v)*2)+'px #000">';});
+                result = result.replace(/\{\\shad([\d.]+)\}/g, function(m,v){var o=parseFloat(v);return '<span style="text-shadow:'+o+'px '+o+'px '+(o*2)+'px #000">';});
+                result = result.replace(/\{\\an(\d+)\}/g, function(m,v){var a={1:'left',2:'center',3:'right',4:'left',5:'center',6:'right',7:'left',8:'center',9:'right'};return '<span style="display:block;text-align:'+(a[v]||'center')+'">';});
+            }
+            result = result.replace(/\{\\b1\}([\s\S]*?)\{\\b0\}/g, '<b>$1</b>');
+            result = result.replace(/\{\\i1\}([\s\S]*?)\{\\i0\}/g, '<i>$1</i>');
+            result = result.replace(/\{\\u1\}([\s\S]*?)\{\\u0\}/g, '<u>$1</u>');
+            result = result.replace(/\{\\s1\}([\s\S]*?)\{\\s0\}/g, '<s>$1</s>');
+            result = result.replace(/\{[^}]*\}/g, '');
+            if (enableStylePreview) {
+                var oc = (result.match(/<span/g)||[]).length;
+                var cc = (result.match(/<\/span>/g)||[]).length;
+                for (var i=cc;i<oc;i++) result += '</span>';
+            }
+            return result.replace(/\n/g, '<br>');
         }
         
         function htmlToAss(html) {
@@ -2159,6 +2270,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             
             row.addClass('editing');
             row.find('.subtitle-text-container').hide();
+            row.find('.subtitle-warnings').hide();
             row.find('.subtitle-actions').hide();
             row.find('.subtitle-index').hide();
             row.find('.subtitle-times').hide();
@@ -2217,6 +2329,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 editor.remove();
                 row.removeClass('editing');
                 row.find('.subtitle-text-container').show();
+                row.find('.subtitle-warnings').show();
                 row.find('.subtitle-actions').show();
                 row.find('.subtitle-index').show();
                 row.find('.subtitle-times').show();
@@ -2808,6 +2921,176 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             window.location.href = 'includes/export-words.php?batch_mode=1';
         }
         
+        function escapeHtml(text) {
+            return $('<div>').text(text).html();
+        }
+        
+        function openModal(id) {
+            $('#' + id).addClass('active');
+        }
+        
+        // ======= Readability =======
+        function calculateReadability() {
+            let total = 0, cpsIssues = 0, cplIssues = 0, durIssues = 0;
+            const issues = [];
+            $('.subtitle-row').removeClass('has-warning has-danger').find('.subtitle-warnings').empty();
+            $(`.subtitle-row[data-file="${currentFileIndex}"]`).each(function() {
+                const $row = $(this);
+                const startStr = $row.find('.time-start').text().trim();
+                const endStr = $row.find('.time-end').text().trim();
+                const text = $row.find('.subtitle-modified').text().trim();
+                if (!startStr || !endStr) return;
+                const start = parseTime(startStr);
+                const end = parseTime(endStr);
+                const duration = end - start;
+                const cleanText = text.replace(/\{[^}]*\}/g, '').replace(/\\[nN]/g, ' ');
+                const charCount = cleanText.length;
+                const cps = duration > 0 ? charCount / duration : 0;
+                const cpl = charCount;
+                $row.removeClass('has-warning has-danger');
+                $row.find('.subtitle-warnings').empty();
+                const rowWarnings = [];
+                if (cps > 20) { rowWarnings.push({type:'cps',severity:'danger',msg:'CPS '+cps.toFixed(1)}); cpsIssues++; }
+                else if (cps > 15) { rowWarnings.push({type:'cps',severity:'warning',msg:'CPS '+cps.toFixed(1)}); cpsIssues++; }
+                if (cpl > 42) { rowWarnings.push({type:'cpl',severity:'warning',msg:cpl+' chars'}); cplIssues++; }
+                if (duration < 1) { rowWarnings.push({type:'duration',severity:'danger',msg:duration.toFixed(1)+'s'}); durIssues++; }
+                else if (duration < 1.5) { rowWarnings.push({type:'duration',severity:'warning',msg:duration.toFixed(1)+'s'}); durIssues++; }
+                if (rowWarnings.length > 0) {
+                    total++;
+                    $row.addClass(rowWarnings.some(w=>w.severity==='danger')?'has-danger':'has-warning');
+                    var $w = $row.find('.subtitle-warnings');
+                    rowWarnings.forEach(function(w) { $w.append('<span class="warning-badge badge-'+w.type+'" title="'+w.msg+'"><i class="fas fa-exclamation-'+(w.severity==='danger'?'circle':'triangle')+'"></i> '+w.msg+'</span>'); });
+                    issues.push({index: $row.data('index')+1, warnings: rowWarnings});
+                }
+            });
+            $('#readabilityCount').text('('+total+' issues)');
+            var $s = $('#readabilitySummary');
+            if (total===0) { $s.html('<div style="text-align:center;padding:0.5rem;color:var(--success);font-size:0.8rem"><i class="fas fa-check-circle"></i> No issues</div>'); }
+            else {
+                $s.html('<div class="r-item"><div class="r-value" style="color:'+(cpsIssues>0?'#ef4444':'#10b981')+'">'+cpsIssues+'</div><div class="r-label">High CPS</div></div><div class="r-item"><div class="r-value" style="color:'+(cplIssues>0?'#f59e0b':'#10b981')+'">'+cplIssues+'</div><div class="r-label">Long Lines</div></div><div class="r-item"><div class="r-value" style="color:'+(durIssues>0?'#ef4444':'#10b981')+'">'+durIssues+'</div><div class="r-label">Short Dur.</div></div><div class="r-item"><div class="r-value">'+total+'</div><div class="r-label">Total</div></div>');
+            }
+            window._readabilityIssues = issues;
+        }
+        function showReadabilityIssues() {
+            var issues = window._readabilityIssues || [];
+            var $l = $('#readabilityIssuesList');
+            if (issues.length===0) { $l.html('<div class="uw-empty"><i class="fas fa-check-circle" style="color:var(--success)"></i><p>No readability issues found!</p></div>'); }
+            else {
+                var h='';
+                issues.forEach(function(i){ var ic=i.warnings.map(function(w){return '<span class="warning-badge badge-'+w.type+'"><i class="fas fa-exclamation-'+(w.severity==='danger'?'circle':'triangle')+'"></i> '+w.msg+'</span>';}).join(' '); h+='<div class="ri-row" onclick="navigateToLine('+(i.index-1)+')"><span class="ri-line">#'+i.index+'</span><span class="ri-msg">'+ic+'</span><i class="fas fa-arrow-right ri-icon" style="color:var(--text-muted)"></i></div>'; });
+                $l.html(h);
+            }
+            openModal('readabilityModal');
+        }
+        function parseTime(str) { str=str.replace(',','.'); var p=str.split(':'); if(p.length===3) return parseInt(p[0])*3600+parseInt(p[1])*60+parseFloat(p[2]); return 0; }
+        function navigateToLine(index) { closeModal('readabilityModal'); var r=$('.subtitle-row[data-index="'+index+'"]'); if(r.length) { r.click(); r[0].scrollIntoView({behavior:'smooth',block:'center'}); } }
+        
+        // ======= Version History =======
+        function saveManualSnapshot() {
+            var label = prompt('Snapshot name:', 'Snapshot '+new Date().toLocaleTimeString());
+            if (!label) return;
+            $.post('version-history.php', {action:'snapshot',label:label,file_index:currentFileIndex}, function(r){ if(r.success){ showToast('Snapshot saved','success'); updateVersionCount(); } },'json');
+        }
+        function saveAutoSnapshot(label) {
+            $.post('version-history.php', {action:'snapshot',label:label,file_index:currentFileIndex}, function(r){ if(r.success) updateVersionCount(); },'json');
+        }
+        function showVersionHistory() {
+            var $l=$('#versionHistoryList'); $l.html('<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>'); openModal('versionHistoryModal');
+            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&t='+Date.now(), function(r){
+                if(!r.success||!r.versions||r.versions.length===0){ $l.html('<div class="uw-empty"><i class="fas fa-history"></i><p>No versions saved</p><small>Use "Snapshot" to save the current state</small></div>'); return; }
+                var h=''; r.versions.forEach(function(v){ h+='<div class="ri-row" onclick="restoreVersion('+v.id+')"><span class="ri-line">#'+v.id+'</span><span class="ri-msg" style="flex:1"><strong>'+escapeHtml(v.label)+'</strong><br><small style="color:var(--text-muted)">'+v.timestamp+' &middot; '+v.count+' lines</small></span><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); restoreVersion('+v.id+')" style="font-size:0.7rem;padding:0.2rem 0.5rem"><i class="fas fa-undo"></i> Restore</button></div>'; });
+                $l.html(h);
+            },'json').fail(function(){ $l.html('<div class="uw-empty"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><p>Failed to load history</p></div>'); });
+        }
+        function restoreVersion(id) {
+            if (!confirm('Restore version #'+id+'? Current state will be saved as a snapshot.')) return;
+            $.post('version-history.php', {action:'restore',id:id,file_index:currentFileIndex}, function(r){
+                if(r.success){
+                    window.batchFiles[currentFileIndex].subtitles = r.subtitles;
+                    $.get(window.location.href.split('?')[0] + '?t=' + Date.now(), function(html) {
+                        var newList = $(html).find('#subtitleList-' + currentFileIndex).html();
+                        if (newList) $('#subtitleList-' + currentFileIndex).html(newList);
+                        calculateReadability();
+                    });
+                    showToast('Restored version #'+id, 'success');
+                    updateVersionCount();
+                    closeModal('versionHistoryModal');
+                } else {
+                    showToast('Restore failed: '+(r.error||'unknown'),'error');
+                }
+            },'json');
+        }
+        function updateVersionCount() {
+            $.get('version-history.php?action=list&file_index='+currentFileIndex+'&t='+Date.now(), function(r){ if(r.success&&r.versions) $('#versionCount').text('('+r.versions.length+')'); },'json');
+        }
+        
+        // ======= Auto-Timing =======
+        function autoNormalizeDuration() {
+            var cps = parseInt($('#autoTargetCps').val()) || 15;
+            saveAutoSnapshot('Before normalize duration');
+            showToast('Normalizing durations...', 'warning');
+            $.post('auto-timing.php', { action: 'normalize', target_cps: cps }, function(resp) {
+                if (resp.success) {
+                    closeModal('timingModal');
+                    location.reload();
+                    showToast('Adjusted ' + (resp.adjusted || 0) + ' subtitle(s)', 'success');
+                } else {
+                    showToast('Normalize failed: ' + (resp.error || 'unknown'), 'error');
+                }
+            }, 'json').fail(function() { showToast('Normalize failed - server error', 'error'); });
+        }
+        function autoFixOverlaps() {
+            saveAutoSnapshot('Before fix overlaps');
+            showToast('Fixing overlaps...', 'warning');
+            $.post('auto-timing.php', { action: 'fix_overlaps' }, function(resp) {
+                if (resp.success) {
+                    closeModal('timingModal');
+                    location.reload();
+                    showToast('Fixed ' + (resp.fixed || 0) + ' overlap(s)', 'success');
+                } else {
+                    showToast('Fix overlaps failed: ' + (resp.error || 'unknown'), 'error');
+                }
+            }, 'json').fail(function() { showToast('Fix overlaps failed - server error', 'error'); });
+        }
+        
+        // ======= Drag & Drop =======
+        let dragFromIndex = null;
+        let dragFromFile = null;
+        $(document).on('dragstart', '.subtitle-row', function(e) {
+            dragFromIndex = $(this).data('index'); dragFromFile = parseInt($(this).attr('data-file'));
+            $(this).addClass('dragging'); e.originalEvent.dataTransfer.effectAllowed = 'move'; e.originalEvent.dataTransfer.setData('text/plain', dragFromIndex);
+        });
+        $(document).on('dragend', '.subtitle-row', function() { $('.subtitle-row').removeClass('dragging drag-over'); dragFromIndex = null; dragFromFile = null; });
+        $(document).on('dragover', '.subtitle-row', function(e) { e.preventDefault(); e.originalEvent.dataTransfer.dropEffect = 'move'; });
+        $(document).on('dragenter', '.subtitle-row', function(e) { e.preventDefault(); $(this).addClass('drag-over'); });
+        $(document).on('dragleave', '.subtitle-row', function() { $(this).removeClass('drag-over'); });
+        $(document).on('drop', '.subtitle-row', function(e) {
+            e.preventDefault(); $(this).removeClass('drag-over');
+            const toIndex = parseInt($(this).attr('data-index')); const toFile = parseInt($(this).attr('data-file'));
+            if (dragFromIndex !== null && dragFromFile === toFile && dragFromIndex !== toIndex) {
+                saveAutoSnapshot('Before reorder');
+                var df = dragFromFile, di = dragFromIndex, ti = toIndex;
+                $.post('reorder-subtitle.php', {from_index: di, to_index: ti, file_index: df}, function(r){
+                    if(r.success) {
+                        if (window.batchFiles[df]) {
+                            window.batchFiles[df].subtitles = r.subtitles;
+                        }
+                        $.get(window.location.href.split('?')[0] + '?t=' + Date.now(), function(html) {
+                            var newList = $(html).find('#subtitleList-' + df).html();
+                            if (newList) {
+                                $('#subtitleList-' + df).html(newList);
+                            }
+                            calculateReadability();
+                        });
+                        showToast('Subtitle moved', 'success');
+                    } else {
+                        showToast('Reorder failed', 'error');
+                    }
+                },'json');
+            }
+            dragFromIndex = null; dragFromFile = null;
+        });
+        
         function closeModal(id) {
             if (id === 'unknownWordsModal') {
                 const activeTab = document.querySelector('#unknownWordsTabs .nav-link.active');
@@ -2917,6 +3200,17 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                     icon.className = 'fas fa-chevron-up';
                 }
             }
+            
+            calculateReadability();
+            updateVersionCount();
+            
+            // Style preview toggle
+            var sp = localStorage.getItem('srtass_style_preview') === 'true';
+            $('#stylePreviewToggle').prop('checked', sp);
+            $('#stylePreviewToggle').on('change', function() {
+                localStorage.setItem('srtass_style_preview', $(this).is(':checked') ? 'true' : 'false');
+                showToast('Style preview ' + ($(this).is(':checked') ? 'enabled' : 'disabled'), 'info');
+            });
         });
     </script>
     <?php include __DIR__ . '/includes/modal-words.php'; ?>
