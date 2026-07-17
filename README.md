@@ -1,6 +1,6 @@
 # SrtAss
 
-**SrtAss** is a web-based subtitle editor for `SRT` and `ASS` formats. Supports dictionary-based word replacement, batch multi-file processing, Indonesian language word detection with Sastrawi stemming, video preview with synchronized subtitle overlay, inline WYSIWYG editing, dark/light theme, and various export options.
+**SrtAss** is a web-based subtitle editor for `SRT`, `ASS`, `VTT`, `SBV`, and `TXT` formats. Supports dictionary-based word replacement, batch multi-file processing, Indonesian language word detection with Sastrawi stemming, video preview with synchronized subtitle overlay, inline WYSIWYG editing, dark/light theme, readability analysis, version history, drag-and-drop reorder, and auto-timing.
 
 ## Features
 
@@ -53,6 +53,36 @@
 - **Delete selected** — confirmation then batch delete
 - **Clear selection**
 
+### Drag & Drop Reorder
+- **Drag subtitle rows** to reorder in both single and batch mode
+- **Auto-snapshot** before reorder for undo protection
+- **AJAX persistence** — no full page reload
+
+### Version History
+- **Auto-snapshots** before destructive actions (reorder, timing changes)
+- **Manual snapshots** — save current state at any time
+- **Restore** — click to restore any previous version
+- **Per-file history** in batch mode
+- **Max 50 versions** kept, auto-pruned
+
+### Readability Analysis
+- **CPS** (characters per second) — warning >15, danger >20
+- **CPL** (characters per line) — warning >42 chars
+- **Duration** — warning <1.5s, danger <1s
+- **Per-row badges** in subtitle list (color-coded)
+- **Summary panel** with issue counts
+- **Modal viewer** with grouped issue listing
+
+### Dictionary Changes Tracking
+- **Per-file tracking** of which dictionary replacements were applied
+- **Modal viewer** in both single and batch mode
+- **Click to jump** — selects the subtitle line
+
+### Auto-Timing
+- **Normalize duration** — set target CPS for all subtitles
+- **Fix overlaps** — automatically resolve overlapping time ranges
+- **Auto-snapshot** before timing changes
+
 ### Dictionary System
 - **Persistent storage** — `content/json/dictionary.json` (sorted, case-insensitive)
 - **Add entry** — key/value pair via sidebar form
@@ -91,6 +121,9 @@
   - **Anime**: 5 styles (Default, Atas, Red PK, Signs, Outline — GosmickSans 75pt)
   - **Movie**: Default — Panefresco 800wt 50pt
   - **Original**: Preserved from source
+- **VTT** — WebVTT format with stripped ASS tags
+- **SBV** — YouTube-compatible format
+- **TXT** — Plain text with optional timing prefix
 - **Batch ZIP** — timestamped archive with all files converted
 
 ### Theme System
@@ -137,6 +170,10 @@
 ├── delete-subtitle-batch.php    AJAX delete (batch)
 ├── update-subtitle.php          AJAX update (single)
 ├── update-subtitle-batch.php    AJAX update (batch)
+├── reorder-subtitle.php         AJAX reorder (single & batch)
+├── version-history.php          Snapshot/restore version history
+├── auto-timing.php              Normalize duration & fix overlaps
+├── .gitignore
 ├── content/
 │   ├── css/
 │   │   ├── theme.css            CSS variables for dark/light theme
@@ -200,6 +237,15 @@
 
 ## Recent Updates
 
+- **Format converter** — VTT, SBV, TXT export support added
+- **Readability warnings** — CPS/CPL/duration badges, panel, and modal in both modes
+- **Version history** — snapshot/restore per-file, auto-snapshots before destructive actions
+- **Drag & drop reorder** — reorder subtitle rows without page reload
+- **ASS style preview** — toggle inline ASS tag rendering in subtitle list
+- **Auto-timing** — normalize CPS duration and fix overlapping timecodes
+- **Dictionary changes tracking** — per-file log of applied dictionary replacements
+- **Batch mode parity** — all features ported to batch mode with per-file isolation
+- **Scrollbar styling** — themed thin scrollbars matching dark/light mode
 - **Light/Dark theme** — full CSS variable migration, no hardcoded colors
 - **Video preview sync** — overlay shows dictionary-modified text; editing updates preview
 - **Unknown words modal** — per-file tabs, localStorage persistence for tab and scroll, fixed tab bar layout
