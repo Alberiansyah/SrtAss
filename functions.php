@@ -61,6 +61,9 @@ function handleSingleRequest()
         $subtitles = $_SESSION['subtitles'];
         $originalFileName = pathinfo($_SESSION['uploaded_file_name'], PATHINFO_FILENAME);
         $subtitleType = $_POST['subtitle_type'] ?? 'anime';  // Default to anime if not set
+        if (!in_array($subtitleType, ['anime', 'movie', 'none'], true)) {
+            $subtitleType = 'anime';
+        }
         $includeTiming = isset($_POST['include_timing']) && $_POST['include_timing'] === '1';
 
         if ($format === 'srt') {
@@ -212,6 +215,9 @@ function handleBatchRequest()
     if (isset($_POST['batch_download'])) {
         $selectedFormat = $_POST['format']; // 'srt' atau 'ass'
         $subtitleType = $_POST['subtitle_type'] ?? 'anime';
+        if (!in_array($subtitleType, ['anime', 'movie', 'none'], true)) {
+            $subtitleType = 'anime';
+        }
         $batchFiles = $_SESSION['batch_files'] ?? [];
         if (!empty($batchFiles)) {
             $zip = new ZipArchive();
@@ -585,6 +591,11 @@ function convertTimeToSrt($time)
 
 function convertToAss($subtitles, $subtitleType, $styles = [], $scriptInfo = '', $projectGarbage = '')
 {
+    // Jamin nilai subtitle type valid; selain anime/movie/none fallback ke anime
+    if (!in_array($subtitleType, ['anime', 'movie', 'none'], true)) {
+        $subtitleType = 'anime';
+    }
+
     $ass = "[Script Info]\n";
 
     // Check if styles exist and include script info
@@ -632,6 +643,9 @@ function convertToAss($subtitles, $subtitleType, $styles = [], $scriptInfo = '',
             foreach ($styles as $style) {
                 $ass .= $style . "\n";
             }
+        } else {
+            // Sumber tanpa style (mis. SRT): fallback ke style default agar file ASS tetap valid
+            $ass .= "Style: Default,GosmickSans,75,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2.5,2,2,15,15,55,1\n";
         }
     }
 

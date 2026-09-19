@@ -1769,7 +1769,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             }
             
             // ======= Refresh Subtitle List (no reload) =======
-            function refreshBatchSubtitleList() {
+            window.refreshBatchSubtitleList = function refreshBatchSubtitleList() {
                 clearSelection();
                 $.get(window.location.href.split('?')[0] + '?t=' + Date.now(), function(html) {
                     var $html = $(html);
@@ -2417,8 +2417,8 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         
         // Download
         function downloadBatch() {
-            const format = $('#exportFormat').val();
-            const subtitleType = $('#subtitleType').val();
+            const format = $('#exportFormat').val() || 'ass';
+            const subtitleType = $('#subtitleType').val() || 'anime';
             
             const form = $('<form method="post">');
             form.append($('<input name="batch_download">').val('1'));

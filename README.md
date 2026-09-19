@@ -126,6 +126,8 @@
   - **Anime**: 5 styles (Default, Atas, Red PK, Signs, Outline — GosmickSans 75pt)
   - **Movie**: Default — Panefresco 800wt 50pt
   - **Original**: Preserved from source
+- **ASS style fallback** — When source has no styles (e.g., SRT converted to ASS), a default `GosmickSans 75pt` style is auto-generated
+- **Subtitle type validation** — Only `anime`, `movie`, `none` accepted; invalid values fall back to `anime`
 - **VTT** — WebVTT format with stripped ASS tags
 - **SBV** — YouTube-compatible format
 - **TXT** — Plain text with optional timing prefix
@@ -258,6 +260,10 @@
 - **Unknown words modal** — per-file tabs, localStorage persistence for tab and scroll, fixed tab bar layout
 - **Session freshness** — unknown words session cleared before each render to prevent stale data
 - **Batch tabs** — manual DOM switching (no Bootstrap interference), scope fix for global functions
+- **Global refresh function** — `window.refreshBatchSubtitleList` for cross-window batch subtitle list refresh
+- **Default export values** — format defaults to `ass`, subtitle type defaults to `anime` when not set
+- **Subtitle type validation** — only `anime`, `movie`, `none` accepted; invalid values fall back to `anime`
+- **ASS style fallback** — auto-generates default `GosmickSans 75pt` style when source has no styles
 - **Keyboard handling** — Space key skips when editing contenteditable fields
 - **CSS architecture** — all colors use `var(--...)` from `theme.css`
 

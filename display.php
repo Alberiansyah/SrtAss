@@ -2199,8 +2199,8 @@ $styles = $_SESSION['styles'] ?? [];
         
         // ======= Download =======
         function downloadSubtitle(format) {
-            format = format || $('#exportFormat').val();
-            const subtitleType = $('#subtitleType').val();
+            format = format || $('#exportFormat').val() || 'ass';
+            const subtitleType = $('#subtitleType').val() || 'anime';
             
             const form = $('<form method="post">');
             form.append($('<input name="download">'));
