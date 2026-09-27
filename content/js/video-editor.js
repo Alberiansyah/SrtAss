@@ -422,14 +422,6 @@ $(document).ready(function() {
             doDelete();
         }
     });
-        currentSubtitleIndex = -1;
-        hasChanges = true;
-        renderSubtitleList();
-        renderSubtitleMarkers();
-        noSelection.style.display = 'block';
-        editForm.style.display = 'none';
-        showToast('Subtitle deleted!', 'success');
-    });
 
     document.getElementById('btnSaveSubtitle').addEventListener('click', function() {
         const srtContent = generateSRT();

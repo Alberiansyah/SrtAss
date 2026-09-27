@@ -971,7 +971,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                                     </div>
                                     <div class="subtitle-warnings"></div>
                                     <div class="subtitle-actions">
-                                        <button class="play-from-btn" data-time="<?= $subtitle['start'] ?>" title="Play from here">
+                                        <button class="play-from-btn" data-time="<?= htmlspecialchars($subtitle['start'], ENT_QUOTES, 'UTF-8') ?>" title="Play from here">
                                             <i class="fas fa-play"></i>
                                         </button>
                                         <button class="delete-subtitle-btn" data-file="<?= $fileIndex ?>" data-index="<?= $index ?>" title="Delete subtitle">
@@ -1435,7 +1435,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
 
     <script>
         // Batch data - make accessible globally
-        window.batchFiles = <?= json_encode($batchData) ?>;
+        window.batchFiles = <?= json_encode($batchData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
         let currentFileIndex = 0;
         let selectedSubtitle = null;
         let videoPlayer = null;
@@ -2807,9 +2807,9 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                                     html += `<div class="unknown-word-item" onclick="goToSubtitle(${fileIdx}, ${lineIndex})">
                                         <div class="uw-info">
                                             <span class="uw-line"><i class="fas fa-hashtag"></i> Line ${item.line}</span>
-                                            <span class="uw-word dc-original">${item.original}</span>
+                                            <span class="uw-word dc-original">${escapeHtml(item.original)}</span>
                                             <span class="dc-arrow"><i class="fas fa-arrow-right"></i></span>
-                                            <span class="uw-word dc-replacement">${item.replacement}</span>
+                                            <span class="uw-word dc-replacement">${escapeHtml(item.replacement)}</span>
                                         </div>
                                         <button class="uw-play-btn" onclick="event.stopPropagation(); goToSubtitle(${fileIdx}, ${lineIndex})" title="Go to line">
                                             <i class="fas fa-arrow-right"></i>
@@ -3107,7 +3107,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             var cps = parseInt($('#autoTargetCps').val()) || 15;
             saveAutoSnapshot('Before normalize duration');
             showToast('Normalizing durations...', 'warning');
-            $.post('auto-timing.php', { action: 'normalize', target_cps: cps }, function(resp) {
+            $.post('auto-timing.php', { action: 'normalize', target_cps: cps, file_index: currentFileIndex }, function(resp) {
                 if (resp.success) {
                     closeModal('timingModal');
                     location.reload();
@@ -3120,7 +3120,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         function autoFixOverlaps() {
             saveAutoSnapshot('Before fix overlaps');
             showToast('Fixing overlaps...', 'warning');
-            $.post('auto-timing.php', { action: 'fix_overlaps' }, function(resp) {
+            $.post('auto-timing.php', { action: 'fix_overlaps', file_index: currentFileIndex }, function(resp) {
                 if (resp.success) {
                     closeModal('timingModal');
                     location.reload();
@@ -3227,7 +3227,8 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-times-circle',
-                warning: 'fa-exclamation-triangle'
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
             };
             
             const toast = $(`<div class="toast ${type}">

@@ -5,7 +5,7 @@ require_once __DIR__ . '/../functions.php';
 $dictionary = $_SESSION['dictionary'] ?? [];
 
 if (empty($dictionary)) {
-    header('Location: ' . $_SERVER['HTTP_REFERER']);
+    header('Location: ../index.php');
     exit;
 }
 

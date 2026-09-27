@@ -316,35 +316,6 @@ $(document).ready(function() {
                 });
             }
         });
-            } else {
-                // Mode single file
-                $.ajax({
-                    url: 'includes/get-words.php',
-                    method: 'GET',
-                    success: function(response) {
-                        const wordsList = $('#nonIndonesianWordsList-single');
-                        wordsList.empty();
-                        
-                        if (response.length > 0) {
-                            response.forEach(function(item) {
-                                wordsList.append(
-                                    `<tr>
-                                        <td>${item.line}</td>
-                                        <td>${item.word}</td>
-                                    </tr>`
-                                );
-                            });
-                        } else {
-                            wordsList.append(
-                                '<tr><td colspan="2" class="text-center">Tidak ada kata yang tidak dikenali</td></tr>'
-                            );
-                        }
-                        
-                        $('#nonIndonesianWordsModal').modal('show');
-                    }
-                });
-            }
-        });
     
         // Export ke TXT
         $('#exportNonIndonesianWords').click(function() {

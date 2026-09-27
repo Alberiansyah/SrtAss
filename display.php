@@ -694,7 +694,7 @@ $styles = $_SESSION['styles'] ?? [];
                             </div>
                             <div class="subtitle-warnings"></div>
                             <div class="subtitle-actions">
-                                <button class="play-from-btn" data-time="<?= $subtitle['start'] ?>" title="Play from here">
+                                <button class="play-from-btn" data-time="<?= htmlspecialchars($subtitle['start'], ENT_QUOTES, 'UTF-8') ?>" title="Play from here">
                                     <i class="fas fa-play"></i>
                                 </button>
                                 <button class="delete-subtitle-btn" data-index="<?= $index ?>" title="Delete subtitle">
@@ -1162,7 +1162,7 @@ $styles = $_SESSION['styles'] ?? [];
 
     <script>
         // Subtitle data for JavaScript - make accessible globally
-        window.subtitleData = <?= json_encode($subtitleData) ?>;
+        window.subtitleData = <?= json_encode($subtitleData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
         
         // ======= Video Player =======
         let videoPlayer = null;
@@ -2527,9 +2527,9 @@ $styles = $_SESSION['styles'] ?? [];
                             html += `<div class="unknown-word-item" onclick="goToSubtitle(${lineIndex})">
                                 <div class="uw-info">
                                     <span class="uw-line"><i class="fas fa-hashtag"></i> Line ${item.line}</span>
-                                    <span class="uw-word dc-original">${item.original}</span>
+                                    <span class="uw-word dc-original">${escapeHtml(item.original)}</span>
                                     <span class="dc-arrow"><i class="fas fa-arrow-right"></i></span>
-                                    <span class="uw-word dc-replacement">${item.replacement}</span>
+                                    <span class="uw-word dc-replacement">${escapeHtml(item.replacement)}</span>
                                 </div>
                                 <button class="uw-play-btn" onclick="event.stopPropagation(); goToSubtitle(${lineIndex})" title="Go to line">
                                     <i class="fas fa-arrow-right"></i>
@@ -3006,7 +3006,8 @@ $styles = $_SESSION['styles'] ?? [];
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-times-circle',
-                warning: 'fa-exclamation-triangle'
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
             };
             
             const toast = $(`<div class="toast ${type}">

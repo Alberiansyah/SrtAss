@@ -4,8 +4,12 @@ require_once __DIR__ . '/../functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['dictionary_file'])) {
     $file = $_FILES['dictionary_file'];
-    
-    if ($file['error'] === UPLOAD_ERR_OK) {
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $_SESSION['import_error'] = 'Upload failed';
+    } elseif ($file['size'] > 5 * 1024 * 1024) {
+        $_SESSION['import_error'] = 'File too large';
+    } else {
         $content = file_get_contents($file['tmp_name']);
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         
@@ -14,9 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['dictionary_file'])) {
         if ($extension === 'json') {
             $data = json_decode($content, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-                $_SESSION['dictionary'] = array_merge($_SESSION['dictionary'] ?? [], $data);
+                $clean = [];
+                foreach ($data as $key => $value) {
+                    if (is_string($key) && is_string($value)) {
+                        $clean[$key] = $value;
+                    }
+                }
+                $_SESSION['dictionary'] = array_merge($_SESSION['dictionary'] ?? [], $clean);
                 saveDictionaryToJson($_SESSION['dictionary']);
-                $imported = count($data);
+                $imported = count($clean);
             } else {
                 $_SESSION['import_error'] = 'Invalid JSON format';
             }
@@ -32,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['dictionary_file'])) {
                 $key = trim($parts[0]);
                 $value = trim($parts[1]);
                 
-                if (!empty($key) && !empty($value)) {
+                if (!empty($key) && !empty($value) && is_string($key) && is_string($value)) {
                     $newEntries[$key] = $value;
                 }
             }

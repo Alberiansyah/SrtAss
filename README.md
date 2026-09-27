@@ -246,6 +246,26 @@
 
 ## Recent Updates
 
+### Bug Fixes & Hardening
+
+- **Fatal JS syntax errors fixed** — removed orphaned duplicate code blocks in `content/js/js.js` and `content/js/video-editor.js` that broke the whole script (and `video-player.php`) on parse
+- **Stored XSS fixed** — dictionary replacement values are now HTML-escaped in the highlight path (`replaceWords()`); raw values are preserved for SRT/ASS/VTT/SBV/TXT export so output stays faithful
+- **Client-side XSS fixed** — dictionary-changes modal now escapes `original`/`replacement` via `escapeHtml()` in both single and batch mode
+- **JSON script-breakout fixed** — `window.subtitleData` / `window.batchFiles` now use `JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT`
+- **Attribute-injection XSS fixed** — subtitle `data-time` attributes are now `htmlspecialchars()`-escaped
+- **Open redirect fixed** — `export-dictionary.php` redirects to a fixed path instead of the request Referer
+- **Dictionary import hardening** — 5 MB size cap, `UPLOAD_ERR_OK` check, and per-entry string key/value validation (`is_string()`) before merge
+- **Regex safety in `replaceWords()`** — added `/u` flag; replacement values are no longer treated as backreferences; placeholder isolation prevents re-matching inside freshly inserted markup
+- **Timestamp math corrected** — `secondsToSrtTimestamp()` can no longer emit an invalid 4-digit ms field; `srtTimestampToSeconds()` preserves ASS centiseconds; `convertTimeToAss()` rollover now cascades correctly through seconds → minutes → hours
+- **Version history atomic writes** — snapshot/restore/delete/clear now run their full read-modify-write under an exclusive lock (`updateHistory()`), preventing lost writes and duplicate IDs
+- **Version history diff fixed** — comparison now keys by subtitle position (previously keyed by a non-existent `index` field, collapsing every line to key `0`)
+- **Batch auto-timing fixed** — `auto-timing.php` now accepts `file_index` and operates on `batch_files[...]['subtitles']`; batch normalize/fix-overlaps buttons work again
+- **Normalize no longer creates overlaps** — end time is clamped before the next subtitle's start; `fix_overlaps` iterates until stable
+- **CWD-independent paths** — dictionary and log paths now use `__DIR__`, fixing split-brain state when endpoints are called from `includes/`
+- **Validation & guards** — unvalidated batch `format`, restore-payload schema validation, timing null/array guards, dictionary decode guard, `clear_session` ordering, `showToast('info')` icon, dead `=== true` comparison
+
+### Features
+
 - **Format converter** — VTT, SBV, TXT export support added
 - **Readability warnings** — CPS/CPL/duration badges, panel, and modal in both modes
 - **Version history optimization** — file-based persistent storage (not session), diff preview, delete/clear actions, search filter, improved ID generation (no conflicts), faster batch restore

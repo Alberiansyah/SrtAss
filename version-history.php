@@ -34,6 +34,38 @@ function saveHistory($file, $data) {
 }
 }
 
+if (!function_exists('updateHistory')) {
+function updateHistory($file, callable $mutator) {
+    $fh = fopen($file, 'c+');
+    if (!$fh) return ['next_id' => 1, 'entries' => []];
+
+    flock($fh, LOCK_EX);
+
+    $contents = stream_get_contents($fh);
+    $data = json_decode($contents, true);
+    if (!is_array($data)) {
+        $data = ['next_id' => 1, 'entries' => []];
+    }
+    if (!isset($data['entries']) || !is_array($data['entries'])) {
+        $data['entries'] = [];
+    }
+    if (!isset($data['next_id'])) {
+        $data['next_id'] = 1;
+    }
+
+    $result = $mutator($data);
+
+    ftruncate($fh, 0);
+    rewind($fh);
+    fwrite($fh, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    fflush($fh);
+    flock($fh, LOCK_UN);
+    fclose($fh);
+
+    return $result;
+}
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $fileIndex = isset($_GET['file_index']) ? intval($_GET['file_index']) : (isset($_POST['file_index']) ? intval($_POST['file_index']) : -1);
 
@@ -83,8 +115,6 @@ switch ($action) {
 
     case 'snapshot':
         $label = $_POST['label'] ?? 'Manual snapshot';
-        $data = loadHistory($historyFile);
-        $id = $data['next_id'];
 
         if ($fileIndex >= 0) {
             $subtitles = $_SESSION['batch_files'][$fileIndex]['subtitles'] ?? [];
@@ -92,46 +122,52 @@ switch ($action) {
             $subtitles = $_SESSION['subtitles'] ?? [];
         }
 
-        $data['entries'][] = [
-            'id' => $id,
-            'timestamp' => date('Y-m-d H:i:s'),
-            'label' => $label,
-            'type' => 'manual',
-            'subtitles' => $subtitles,
-            'file_index' => $fileIndex >= 0 ? $fileIndex : -1
-        ];
-        $data['next_id'] = $id + 1;
+        $newId = updateHistory($historyFile, function (&$data) use ($label, $subtitles, $fileIndex, $maxEntries) {
+            $id = $data['next_id'];
 
-        if (count($data['entries']) > $maxEntries) {
-            $data['entries'] = array_slice($data['entries'], count($data['entries']) - $maxEntries);
-        }
+            $data['entries'][] = [
+                'id' => $id,
+                'timestamp' => date('Y-m-d H:i:s'),
+                'label' => $label,
+                'type' => 'manual',
+                'subtitles' => $subtitles,
+                'file_index' => $fileIndex >= 0 ? $fileIndex : -1
+            ];
+            $data['next_id'] = $id + 1;
 
-        saveHistory($historyFile, $data);
-        echo json_encode(['success' => true, 'id' => $id]);
+            if (count($data['entries']) > $maxEntries) {
+                $data['entries'] = array_slice($data['entries'], count($data['entries']) - $maxEntries);
+            }
+
+            return $id;
+        });
+
+        echo json_encode(['success' => true, 'id' => $newId]);
         break;
 
     case 'restore':
         $id = intval($_POST['id'] ?? 0);
-        $data = loadHistory($historyFile);
-        $found = null;
-        $foundKey = null;
 
-        foreach ($data['entries'] as $k => $v) {
-            if ($v['id'] === $id) {
-                $found = $v;
-                $foundKey = $k;
-                break;
-            }
+        if ($fileIndex >= 0) {
+            $currentSubtitles = $_SESSION['batch_files'][$fileIndex]['subtitles'] ?? [];
+        } else {
+            $currentSubtitles = $_SESSION['subtitles'] ?? [];
         }
 
-        if ($found) {
-            $autoId = $data['next_id'];
-
-            if ($fileIndex >= 0) {
-                $currentSubtitles = $_SESSION['batch_files'][$fileIndex]['subtitles'] ?? [];
-            } else {
-                $currentSubtitles = $_SESSION['subtitles'] ?? [];
+        $found = updateHistory($historyFile, function (&$data) use ($id, $currentSubtitles, $maxEntries) {
+            $match = null;
+            foreach ($data['entries'] as $v) {
+                if ($v['id'] === $id) {
+                    $match = $v;
+                    break;
+                }
             }
+
+            if ($match === null) {
+                return null;
+            }
+
+            $autoId = $data['next_id'];
 
             $data['entries'][] = [
                 'id' => $autoId,
@@ -139,7 +175,7 @@ switch ($action) {
                 'label' => 'Before restore to #' . $id,
                 'type' => 'auto',
                 'subtitles' => $currentSubtitles,
-                'file_index' => $found['file_index'] ?? -1
+                'file_index' => $match['file_index'] ?? -1
             ];
             $data['next_id'] = $autoId + 1;
 
@@ -147,8 +183,10 @@ switch ($action) {
                 $data['entries'] = array_slice($data['entries'], count($data['entries']) - $maxEntries);
             }
 
-            saveHistory($historyFile, $data);
+            return $match;
+        });
 
+        if ($found) {
             if ($fileIndex >= 0) {
                 $_SESSION['batch_files'][$fileIndex]['subtitles'] = $found['subtitles'];
             } else {
@@ -167,19 +205,18 @@ switch ($action) {
 
     case 'delete':
         $id = intval($_POST['id'] ?? 0);
-        $data = loadHistory($historyFile);
-        $deleted = false;
 
-        foreach ($data['entries'] as $k => $v) {
-            if ($v['id'] === $id) {
-                array_splice($data['entries'], $k, 1);
-                $deleted = true;
-                break;
+        $deleted = updateHistory($historyFile, function (&$data) use ($id) {
+            foreach ($data['entries'] as $k => $v) {
+                if ($v['id'] === $id) {
+                    array_splice($data['entries'], $k, 1);
+                    return true;
+                }
             }
-        }
+            return false;
+        });
 
         if ($deleted) {
-            saveHistory($historyFile, $data);
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => 'Version not found']);
@@ -187,17 +224,16 @@ switch ($action) {
         break;
 
     case 'clear':
-        $data = loadHistory($historyFile);
+        updateHistory($historyFile, function (&$data) use ($fileIndex) {
+            if ($fileIndex >= 0) {
+                $data['entries'] = array_values(array_filter($data['entries'], function($v) use ($fileIndex) {
+                    return ($v['file_index'] ?? -1) !== $fileIndex;
+                }));
+            } else {
+                $data['entries'] = [];
+            }
+        });
 
-        if ($fileIndex >= 0) {
-            $data['entries'] = array_values(array_filter($data['entries'], function($v) use ($fileIndex) {
-                return ($v['file_index'] ?? -1) !== $fileIndex;
-            }));
-        } else {
-            $data['entries'] = [];
-        }
-
-        saveHistory($historyFile, $data);
         echo json_encode(['success' => true]);
         break;
 
@@ -234,13 +270,9 @@ switch ($action) {
         $subs2 = $v2['subtitles'] ?? [];
 
         $map1 = [];
-        foreach ($subs1 as $s) {
-            $map1[$s['index'] ?? 0] = $s['text'] ?? '';
-        }
+        foreach ($subs1 as $i => $s) { $map1[$i] = $s['text'] ?? ''; }
         $map2 = [];
-        foreach ($subs2 as $s) {
-            $map2[$s['index'] ?? 0] = $s['text'] ?? '';
-        }
+        foreach ($subs2 as $i => $s) { $map2[$i] = $s['text'] ?? ''; }
 
         $allIndices = array_unique(array_merge(array_keys($map1), array_keys($map2)));
         sort($allIndices);
