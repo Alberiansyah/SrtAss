@@ -318,6 +318,11 @@ $(document).ready(function() {
         videoDuration = video.duration;
         updateTimeDisplay();
         renderSubtitleMarkers();
+        // Terapkan posisi timeline yang diklik sebelum video di-load
+        if (video._pendingSeek && isFinite(videoDuration) && videoDuration > 0) {
+            video.currentTime = video._pendingSeek * videoDuration;
+            video._pendingSeek = null;
+        }
     });
 
     video.addEventListener('timeupdate', function() {
@@ -327,11 +332,14 @@ $(document).ready(function() {
     });
 
     timeline.addEventListener('click', function(e) {
-        if (!videoDuration) return;
         const rect = timeline.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percent = x / rect.width;
-        video.currentTime = percent * videoDuration;
+        const fraction = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+        if (!videoDuration) {
+            // Video belum di-load: simpan posisi, diterapkan saat video selesai di-load
+            video._pendingSeek = fraction;
+            return;
+        }
+        video.currentTime = fraction * videoDuration;
         video.play();
     });
 
@@ -416,9 +424,12 @@ $(document).ready(function() {
             editForm.style.display = 'none';
             showToast('Subtitle deleted!', 'success');
         };
-        if (typeof showConfirm === 'function') {
+        var warnEnabled = localStorage.getItem('deleteWarnConfirm') !== '0';
+        if (warnEnabled && typeof showConfirm === 'function') {
             showConfirm('Delete subtitle', 'Delete this subtitle?', doDelete);
-        } else if (confirm('Delete this subtitle?')) {
+        } else if (warnEnabled && confirm('Delete this subtitle?')) {
+            doDelete();
+        } else {
             doDelete();
         }
     });
@@ -452,6 +463,16 @@ $(document).ready(function() {
     document.documentElement.setAttribute('data-bs-theme', savedTheme);
     if (savedTheme === 'light') {
         $('#themeIcon').removeClass('fa-moon').addClass('fa-sun');
+    }
+
+    // Init checkbox konfirmasi delete (default nyala, tersimpan di localStorage)
+    const deleteWarnToggle = document.getElementById('deleteWarnToggle');
+    if (deleteWarnToggle) {
+        deleteWarnToggle.checked = localStorage.getItem('deleteWarnConfirm') !== '0';
+        deleteWarnToggle.addEventListener('change', function() {
+            localStorage.setItem('deleteWarnConfirm', this.checked ? '1' : '0');
+            showToast(this.checked ? 'Delete confirmation enabled' : 'Delete confirmation disabled - delete langsung tanpa konfirmasi', 'info');
+        });
     }
 
     $(document).on('keydown', function(e) {

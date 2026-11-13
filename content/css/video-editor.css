@@ -406,6 +406,22 @@ body {
     font-weight: 600;
 }
 
+/* Toggle konfirmasi delete */
+.delete-warn-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.delete-warn-toggle input[type="checkbox"] {
+    accent-color: #ef4444;
+    cursor: pointer;
+    margin: 0;
+}
+
 .panel-body {
     padding: 20px;
 }

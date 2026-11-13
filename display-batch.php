@@ -936,6 +936,9 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                             <i class="fas fa-search"></i>
                             <input type="text" id="subtitleSearch" placeholder="Search subtitles...">
                         </div>
+                        <label class="delete-warn-toggle" title="Aktif: tampilkan konfirmasi sebelum delete. Nonaktif: tombol delete langsung menghapus tanpa konfirmasi.">
+                            <input type="checkbox" id="deleteWarnToggle"> Confirm delete
+                        </label>
                         <div class="batch-toolbar" id="batchToolbar">
                             <span class="batch-label"><span id="batchCount">0</span> selected</span>
                             <span class="et-sep"></span>
@@ -1446,11 +1449,30 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         $(document).ready(function() {
             videoPlayer = $('#videoPlayer')[0];
             
+            // Init checkbox konfirmasi delete (default nyala)
+            $('#deleteWarnToggle').prop('checked', isDeleteConfirmEnabled());
+            $('#deleteWarnToggle').on('change', function() {
+                localStorage.setItem('deleteWarnConfirm', this.checked ? '1' : '0');
+                showToast(this.checked ? 'Delete confirmation enabled' : 'Delete confirmation disabled - delete langsung tanpa konfirmasi', 'info');
+            });
+            
             if (videoPlayer) {
                 videoPlayer.addEventListener('loadedmetadata', function() {
                     duration = videoPlayer.duration;
                     updateTimeDisplay();
                     renderTimelineBlocks();
+                    // Terapkan posisi yang diklik sebelum video di-load (timeline: fraction, row subtitle: time)
+                    if (window.pendingSeek && isFinite(duration) && duration > 0) {
+                        if (typeof window.pendingSeek.time === 'number') {
+                            videoPlayer.currentTime = window.pendingSeek.time;
+                        } else if (typeof window.pendingSeek.fraction === 'number') {
+                            videoPlayer.currentTime = window.pendingSeek.fraction * duration;
+                        }
+                        currentTime = videoPlayer.currentTime;
+                        updateSlider();
+                        updateTimeDisplay();
+                        window.pendingSeek = null;
+                    }
                 });
                 
                 videoPlayer.addEventListener('timeupdate', function() {
@@ -1613,6 +1635,35 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 currentTime = time;
             });
             
+            // Timeline click & drag: 1x klik langsung menuju posisi yang diklik
+            const timelineSeek = $('#timelineProgress').parent(); // .timeline-progress-container
+            timelineSeek.css('cursor', 'pointer');
+            window.pendingSeek = null; // posisi timeline yang diklik sebelum video di-load
+            let timelineDragging = false;
+            function seekFromEvent(e) {
+                const rect = timelineSeek[0].getBoundingClientRect();
+                const fraction = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                if (!videoPlayer || !duration) {
+                    // Video belum di-load: simpan posisi, diterapkan saat video selesai di-load
+                    window.pendingSeek = { fraction: fraction };
+                    return;
+                }
+                videoPlayer.currentTime = fraction * duration;
+                currentTime = videoPlayer.currentTime;
+                updateSlider();
+                updateTimeDisplay();
+            }
+            timelineSeek.on('mousedown', function(e) {
+                timelineDragging = true;
+                seekFromEvent(e);
+            });
+            $(document).on('mousemove', function(e) {
+                if (timelineDragging) seekFromEvent(e);
+            });
+            $(document).on('mouseup', function() {
+                timelineDragging = false;
+            });
+            
             // Search
             $('#subtitleSearch').on('input', function() {
                 filterSubtitles($(this).val());
@@ -1640,7 +1691,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             }
             
             function deleteSubtitleBatch(fileIndex, index) {
-                showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', function() {
+                const doDelete = function() {
                     saveUndoState();
                     $.post('delete-subtitle-batch.php', { file_index: fileIndex, index: index }, function(response) {
                         if (response.success) {
@@ -1652,7 +1703,12 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                     }, 'json').fail(function() {
                         showToast('Delete failed - server error', 'error');
                     });
-                });
+                };
+                if (isDeleteConfirmEnabled()) {
+                    showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', doDelete);
+                } else {
+                    doDelete();
+                }
             }
             
             function deleteSelectedSubtitlesBatch() {
@@ -1666,7 +1722,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                     showToast('No subtitles selected in current file', 'warning');
                     return;
                 }
-                showConfirm('Delete ' + indices.length + ' subtitles?', 'Are you sure you want to delete ' + indices.length + ' selected subtitle(s)? This action cannot be undone.', function() {
+                const doDelete = function() {
                     saveUndoState();
                     $.post('delete-subtitle-batch.php', { file_index: currentFile, indices: JSON.stringify(indices) }, function(response) {
                         if (response.success) {
@@ -1678,7 +1734,12 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                     }, 'json').fail(function() {
                         showToast('Delete failed - server error', 'error');
                     });
-                });
+                };
+                if (isDeleteConfirmEnabled()) {
+                    showConfirm('Delete ' + indices.length + ' subtitles?', 'Are you sure you want to delete ' + indices.length + ' selected subtitle(s)? This action cannot be undone.', doDelete);
+                } else {
+                    doDelete();
+                }
             }
             
             // ======= Merge Subtitles (Batch) =======
@@ -2183,6 +2244,23 @@ $dictionary = $_SESSION['dictionary'] ?? [];
             const row = $(`.subtitle-row[data-file="${fileIndex}"][data-index="${index}"]`);
             if (row.length) {
                 row[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            // Pindahkan video/timeline ke start time subtitle yang dipilih
+            const subs = window.batchFiles?.[fileIndex]?.subtitles;
+            if (videoPlayer && subs && subs[index]) {
+                const time = parseTimestamp(subs[index].start);
+                if (isFinite(time)) {
+                    if (!videoPlayer.src) {
+                        // Video belum di-load: simpan target, diterapkan saat video selesai di-load
+                        window.pendingSeek = { time: time };
+                    } else {
+                        videoPlayer.currentTime = time;
+                        currentTime = videoPlayer.currentTime;
+                        updateSlider();
+                        updateTimeDisplay();
+                    }
+                }
             }
         }
         
@@ -3216,6 +3294,12 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                 _confirmCallback = null;
             }
         });
+
+        // ======= Delete Confirm Toggle =======
+        // Default nyala (true). Pilihan disimpan di localStorage.
+        function isDeleteConfirmEnabled() {
+            return localStorage.getItem('deleteWarnConfirm') !== '0';
+        }
 
         function showToast(message, type = 'success') {
             let container = $('.toast-container');

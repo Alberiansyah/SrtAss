@@ -114,8 +114,11 @@ $dictionary = $_SESSION['dictionary'] ?? [];
 
         <div class="edit-section">
             <div class="edit-panel">
-                <div class="panel-header">
+                <div class="panel-header d-flex justify-content-between align-items-center">
                     <h5><i class="fas fa-edit me-2"></i>Edit Subtitle</h5>
+                    <label class="delete-warn-toggle text-white" title="Aktif: tampilkan konfirmasi sebelum delete. Nonaktif: tombol delete langsung menghapus tanpa konfirmasi.">
+                        <input type="checkbox" id="deleteWarnToggle"> Confirm delete
+                    </label>
                 </div>
                 <div class="panel-body">
                     <div class="no-selection" id="noSelection">

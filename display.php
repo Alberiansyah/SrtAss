@@ -666,6 +666,9 @@ $styles = $_SESSION['styles'] ?? [];
                             <input type="text" id="subtitleSearch" placeholder="Search subtitles...">
                         </div>
                         <span class="badge bg-primary" id="subtitleCount"><?= count($subtitles) ?> lines</span>
+                        <label class="delete-warn-toggle" title="Aktif: tampilkan konfirmasi sebelum delete. Nonaktif: tombol delete langsung menghapus tanpa konfirmasi.">
+                            <input type="checkbox" id="deleteWarnToggle"> Confirm delete
+                        </label>
                         <div class="batch-toolbar" id="batchToolbar">
                             <span class="batch-label"><span id="batchCount">0</span> selected</span>
                             <span class="et-sep"></span>
@@ -1177,6 +1180,13 @@ $styles = $_SESSION['styles'] ?? [];
         $(document).ready(function() {
             videoPlayer = $('#videoPlayer')[0];
             
+            // Init checkbox konfirmasi delete (default nyala)
+            $('#deleteWarnToggle').prop('checked', isDeleteConfirmEnabled());
+            $('#deleteWarnToggle').on('change', function() {
+                localStorage.setItem('deleteWarnConfirm', this.checked ? '1' : '0');
+                showToast(this.checked ? 'Delete confirmation enabled' : 'Delete confirmation disabled - delete langsung tanpa konfirmasi', 'info');
+            });
+            
             // ======= Undo / Redo =======
             const undoStack = [];
             const redoStack = [];
@@ -1222,6 +1232,18 @@ $styles = $_SESSION['styles'] ?? [];
                     duration = videoPlayer.duration;
                     updateTimeDisplay();
                     renderTimelineBlocks();
+                    // Terapkan posisi yang diklik sebelum video di-load (timeline: fraction, row subtitle: time)
+                    if (window.pendingSeek && isFinite(duration) && duration > 0) {
+                        if (typeof window.pendingSeek.time === 'number') {
+                            videoPlayer.currentTime = window.pendingSeek.time;
+                        } else if (typeof window.pendingSeek.fraction === 'number') {
+                            videoPlayer.currentTime = window.pendingSeek.fraction * duration;
+                        }
+                        currentTime = videoPlayer.currentTime;
+                        updateSlider();
+                        updateTimeDisplay();
+                        window.pendingSeek = null;
+                    }
                 });
                 
                 videoPlayer.addEventListener('timeupdate', function() {
@@ -1420,6 +1442,35 @@ $styles = $_SESSION['styles'] ?? [];
                 currentTime = time;
             });
             
+            // Timeline click & drag: 1x klik langsung menuju posisi yang diklik
+            const timelineSeek = $('#timelineProgress').parent(); // .timeline-progress-container
+            timelineSeek.css('cursor', 'pointer');
+            window.pendingSeek = null; // posisi timeline yang diklik sebelum video di-load
+            let timelineDragging = false;
+            function seekFromEvent(e) {
+                const rect = timelineSeek[0].getBoundingClientRect();
+                const fraction = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                if (!videoPlayer || !duration) {
+                    // Video belum di-load: simpan posisi, diterapkan saat video selesai di-load
+                    window.pendingSeek = { fraction: fraction };
+                    return;
+                }
+                videoPlayer.currentTime = fraction * duration;
+                currentTime = videoPlayer.currentTime;
+                updateSlider();
+                updateTimeDisplay();
+            }
+            timelineSeek.on('mousedown', function(e) {
+                timelineDragging = true;
+                seekFromEvent(e);
+            });
+            $(document).on('mousemove', function(e) {
+                if (timelineDragging) seekFromEvent(e);
+            });
+            $(document).on('mouseup', function() {
+                timelineDragging = false;
+            });
+            
             // Search
             $('#subtitleSearch').on('input', function() {
                 filterSubtitles($(this).val());
@@ -1541,7 +1592,7 @@ $styles = $_SESSION['styles'] ?? [];
             }
             
             function deleteSubtitle(index) {
-                showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', function() {
+                const doDelete = function() {
                     saveAutoSnapshot('Before delete #' + (parseInt(index) + 1));
                     saveUndoState();
                     $.post('delete-subtitle.php', { index: index }, function(response) {
@@ -1554,13 +1605,18 @@ $styles = $_SESSION['styles'] ?? [];
                     }, 'json').fail(function() {
                         showToast('Delete failed - server error', 'error');
                     });
-                });
+                };
+                if (isDeleteConfirmEnabled()) {
+                    showConfirm('Delete subtitle #' + (parseInt(index) + 1) + '?', 'Are you sure you want to delete this subtitle? This action cannot be undone.', doDelete);
+                } else {
+                    doDelete();
+                }
             }
             
             function deleteSelectedSubtitles() {
                 const count = selectedRows.size;
                 if (count === 0) return;
-                showConfirm('Delete ' + count + ' subtitles?', 'Are you sure you want to delete ' + count + ' selected subtitle(s)? This action cannot be undone.', function() {
+                const doDelete = function() {
                     saveUndoState();
                     const indices = Array.from(selectedRows);
                     $.post('delete-subtitle.php', { indices: JSON.stringify(indices) }, function(response) {
@@ -1573,7 +1629,12 @@ $styles = $_SESSION['styles'] ?? [];
                     }, 'json').fail(function() {
                         showToast('Delete failed - server error', 'error');
                     });
-                });
+                };
+                if (isDeleteConfirmEnabled()) {
+                    showConfirm('Delete ' + count + ' subtitles?', 'Are you sure you want to delete ' + count + ' selected subtitle(s)? This action cannot be undone.', doDelete);
+                } else {
+                    doDelete();
+                }
             }
             
             // ======= Merge Subtitles =======
@@ -1923,6 +1984,22 @@ $styles = $_SESSION['styles'] ?? [];
             const row = $(`.subtitle-row[data-index="${index}"]`);
             if (row.length) {
                 row[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            // Pindahkan video/timeline ke start time subtitle yang dipilih
+            if (videoPlayer && window.subtitleData && window.subtitleData[index]) {
+                const time = parseTimestamp(window.subtitleData[index].start);
+                if (isFinite(time)) {
+                    if (!videoPlayer.src) {
+                        // Video belum di-load: simpan target, diterapkan saat video selesai di-load
+                        window.pendingSeek = { time: time };
+                    } else {
+                        videoPlayer.currentTime = time;
+                        currentTime = videoPlayer.currentTime;
+                        updateSlider();
+                        updateTimeDisplay();
+                    }
+                }
             }
         }
         
@@ -2986,6 +3063,12 @@ $styles = $_SESSION['styles'] ?? [];
                 $('#confirmModal').removeClass('active');
                 _confirmCallback = null;
             });
+        }
+
+        // ======= Delete Confirm Toggle =======
+        // Default nyala (true). Pilihan disimpan di localStorage.
+        function isDeleteConfirmEnabled() {
+            return localStorage.getItem('deleteWarnConfirm') !== '0';
         }
         // Close on overlay click
         $(document).on('click', '#confirmModal', function(e) {
