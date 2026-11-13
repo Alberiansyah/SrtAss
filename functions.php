@@ -1,8 +1,13 @@
 <?php
 require_once 'vendor/autoload.php'; // Tambahkan di awal file
+require_once __DIR__ . '/includes/naturalizer.php'; // Naturalizer penggantian kontekstual
 
 define('ENABLE_WORD_HIGHLIGHT', true); // Kontrol highlight
 define('ENABLE_NON_INDONESIAN_WORD_LOGGING', true); // Kontrol logging
+
+if (!defined('ENABLE_PRONOUN_NATURALIZATION')) {
+    define('ENABLE_PRONOUN_NATURALIZATION', true); // Kontrol naturalisasi klitik pronomina
+}
 
 // Validasi payload restore: array subtitle dengan key start/end/text bertipe string
 function validateSubtitlesArray($data)
@@ -558,76 +563,47 @@ function parseAss($content)
     ];
 }
 
-// Proses penggantian kata berdasarkan kamus
-function replaceWords($text, $applyHighlight = true)
+// Proses penggantian kata berdasarkan kamus (single-pass, sadar konteks)
+function replaceWords($text, $applyHighlight = true, ?array $dictionary = null)
 {
-    if (empty($_SESSION['dictionary']) || !is_array($_SESSION['dictionary'])) {
+    if ($dictionary === null) {
+        $dictionary = $_SESSION['dictionary'] ?? null;
+    }
+    if (empty($dictionary) || !is_array($dictionary)) {
         return $text;
     }
 
-    // Urutkan kamus berdasarkan panjang kata kunci (terpanjang dulu)
-    $sortedDict = $_SESSION['dictionary'];
-    uksort($sortedDict, function ($a, $b) {
-        return strlen($b) - strlen($a);
-    });
-
-    // Untuk path highlight (HTML), gunakan placeholder agar iterasi berikutnya
-    // tidak cocok di dalam markup HTML yang baru disisipkan.
-    $placeholderMap = [];
-    $tokenIndex = 0;
-    $sentinel = "\x1A";
-    if ($applyHighlight === true) {
-        // Cari sentinel yang belum ada di dalam teks
-        while (strpos($text, $sentinel) !== false) {
-            $sentinel .= "\x1A";
-        }
+    $text = (string) $text;
+    $matches = naturalizer_matches($text, $dictionary);
+    if (empty($matches)) {
+        return $text;
     }
 
-    // Ganti kata berdasarkan kamus
-    foreach ($sortedDict as $key => $value) {
-        if ($applyHighlight === true) {
-            $replacement = '<span class="highlight">' . htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') . '</span>';
+    // Bangun output dari teks asli memakai byte offset (hasil replacement tidak discan ulang)
+    $result = '';
+    $cursor = 0;
+    foreach ($matches as $match) {
+        $start = (int) $match['start'];
+        $length = (int) $match['length'];
+        if ($start < $cursor) {
+            continue; // jaga-jaga agar tidak ada overlap
+        }
+
+        $result .= substr($text, $cursor, $start - $cursor);
+
+        if ($match['replacement'] === $match['original']) {
+            $result .= substr($text, $start, $length);
+        } elseif ($applyHighlight === true) {
+            $result .= '<span class="highlight">' . htmlspecialchars($match['replacement'], ENT_QUOTES, 'UTF-8') . '</span>';
         } else {
-            $replacement = (string)$value;
+            $result .= $match['replacement'];
         }
 
-        // Pola untuk kata biasa
-        $text = preg_replace_callback(
-            '/\b' . preg_quote($key, '/') . '\b/u',
-            function ($m) use ($applyHighlight, $replacement, &$placeholderMap, &$tokenIndex, $sentinel) {
-                if ($applyHighlight === true) {
-                    $token = $sentinel . $tokenIndex . $sentinel;
-                    $placeholderMap[$token] = $replacement;
-                    $tokenIndex++;
-                    return $token;
-                }
-                return $replacement;
-            },
-            $text
-        );
-
-        // Pola untuk kasus \n atau \N di awal kata (pertahankan newline)
-        $text = preg_replace_callback(
-            '/(\\\\[nN])' . preg_quote($key, '/') . '\b/u',
-            function ($m) use ($applyHighlight, $replacement, &$placeholderMap, &$tokenIndex, $sentinel) {
-                if ($applyHighlight === true) {
-                    $token = $sentinel . $tokenIndex . $sentinel;
-                    $placeholderMap[$token] = $replacement;
-                    $tokenIndex++;
-                    return $m[1] . $token;
-                }
-                return $m[1] . $replacement;
-            },
-            $text
-        );
+        $cursor = $start + $length;
     }
+    $result .= substr($text, $cursor);
 
-    // Kembalikan placeholder menjadi HTML sebenarnya (sekali saja, setelah loop)
-    if ($applyHighlight === true && !empty($placeholderMap)) {
-        $text = strtr($text, $placeholderMap);
-    }
-
-    return $text;
+    return $result;
 }
 
 // Fungsi untuk mengonversi subtitle menjadi format SRT
@@ -974,63 +950,54 @@ function logIndonesiaWords($text, $lineNumber, $logFile = null)
     }
 }
 
-function getDictionaryChanges($subtitles)
+function getDictionaryChanges($subtitles, ?array $dictionary = null)
 {
     $changes = [];
-    if (!isset($_SESSION['dictionary']) || empty($_SESSION['dictionary'])) {
+    if ($dictionary === null) {
+        $dictionary = $_SESSION['dictionary'] ?? null;
+    }
+    if (empty($dictionary) || !is_array($dictionary)) {
         return $changes;
     }
 
-    $dict = $_SESSION['dictionary'];
-    uksort($dict, function ($a, $b) {
-        return strlen($b) - strlen($a);
-    });
-
     foreach ($subtitles as $idx => $sub) {
-        $text = $sub['text'] ?? '';
-        $original = $text;
+        $original = isset($sub['text']) ? (string) $sub['text'] : '';
+        if ($original === '') {
+            continue;
+        }
 
-        foreach ($dict as $key => $value) {
-            $pattern = '/\b' . preg_quote($key, '/') . '\b/u';
-            if (preg_match_all($pattern, $original, $matches, PREG_OFFSET_CAPTURE)) {
-                foreach ($matches[0] as $match) {
-                    $pos = $match[1];
-                    $charPos = mb_strlen(substr($original, 0, $pos), 'UTF-8');
-                    $contextStart = max(0, $charPos - 20);
-                    $contextLen = min(40, mb_strlen($original, 'UTF-8') - $contextStart);
-                    $context = ($contextStart > 0 ? '...' : '') . mb_substr($original, $contextStart, $contextLen, 'UTF-8') . ($contextStart + $contextLen < mb_strlen($original, 'UTF-8') ? '...' : '');
+        $matches = naturalizer_matches($original, $dictionary);
+        if (empty($matches)) {
+            continue;
+        }
 
-                    $changes[] = [
-                        'line' => $idx + 1,
-                        'original' => $key,
-                        'replacement' => $value,
-                        'context' => $context,
-                    ];
-                }
+        $totalChars = mb_strlen($original, 'UTF-8');
+        foreach ($matches as $match) {
+            if ($match['replacement'] === $match['original']) {
+                continue; // tidak ada perubahan nyata
             }
 
-            $patternN = '/(\\\\[nN])' . preg_quote($key, '/') . '\b/u';
-            if (preg_match_all($patternN, $original, $matches, PREG_OFFSET_CAPTURE)) {
-                foreach ($matches[0] as $match) {
-                    $pos = $match[1];
-                    $charPos = mb_strlen(substr($original, 0, $pos), 'UTF-8');
-                    $contextStart = max(0, $charPos - 20);
-                    $contextLen = min(40, mb_strlen($original, 'UTF-8') - $contextStart);
-                    $context = ($contextStart > 0 ? '...' : '') . mb_substr($original, $contextStart, $contextLen, 'UTF-8') . ($contextStart + $contextLen < mb_strlen($original, 'UTF-8') ? '...' : '');
+            // Konversi byte offset -> posisi karakter untuk context
+            $charPos = mb_strlen(substr($original, 0, (int) $match['start']), 'UTF-8');
+            $contextStart = max(0, $charPos - 20);
+            $contextLen = min(40, $totalChars - $contextStart);
+            $context = ($contextStart > 0 ? '...' : '')
+                . mb_substr($original, $contextStart, $contextLen, 'UTF-8')
+                . ($contextStart + $contextLen < $totalChars ? '...' : '');
 
-                    $changes[] = [
-                        'line' => $idx + 1,
-                        'original' => $key,
-                        'replacement' => $value,
-                        'context' => $context,
-                    ];
-                }
-            }
+            $changes[] = [
+                'line' => $idx + 1,
+                'original' => trim($match['original']),
+                'replacement' => $match['replacement'],
+                'context' => $context,
+                'type' => $match['type'],
+            ];
         }
     }
 
+    // Stabil di PHP 8: urutan dalam satu baris tetap sesuai posisi match
     usort($changes, function ($a, $b) {
-        return $a['line'] - $b['line'];
+        return $a['line'] <=> $b['line'];
     });
 
     return $changes;

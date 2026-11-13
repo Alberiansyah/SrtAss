@@ -290,3 +290,92 @@
 ## License
 
 Open-source. Fork and modify as needed.
+
+## Natural Pronoun Merging (Clitic Rules)
+
+Word-by-word dictionary replacement produces grammatically awkward Indonesian, because pronouns that should attach as clitics are left as separate words. The engine now has a normalization layer that resolves dictionary entries and clitic merges in a **single pass**, so the two never chain into each other.
+
+### The Problem
+
+| Before (word-by-word) | After (naturalized) |
+|-----------------------|---------------------|
+| `dengan Anda` | `denganmu` |
+| `dari saya` | `dariku` |
+| `kepada dia` | `kepadanya` |
+| `milik saya` | `milikku` |
+| `impian saya` | `impianku` |
+| `rumah kamu` | `rumahmu` |
+| `nama saya` | `namaku` |
+| `rumah dia` | `rumahnya` |
+
+End-to-end example:
+
+```
+Input : Menjadi advokat publik adalah impian saya. Bagaimana dengan Anda?
+Output: Menjadi advokat publik adalah impianku. Bagaimana denganmu?
+```
+
+### How the Rules Work
+
+Two merge rules are applied, both driven by pronoun groups:
+
+| Group | Pronouns | Clitic |
+|-------|----------|--------|
+| 1 | `saya`, `aku` | `-ku` |
+| 2 | `kamu`, `kau`, `anda` | `-mu` |
+| 3 | `dia`, `ia` | `-nya` |
+
+- **Preposition + pronoun** — a pronoun directly following a configured preposition is attached to that preposition (`dengan Anda` → `denganmu`). Only prepositions that are unambiguous as hosts are configured; `seperti`, `punya`, and `tanpa` are deliberately excluded because they also introduce clauses (`seperti ia katakan` = "as he said") or act as verbs (`Saya punya kamu`).
+- **Possessive noun + pronoun** — a pronoun following a noun listed in `possessive_nouns` is attached to that noun (`impian saya` → `impianku`). Only listed nouns are hosts, so random words are never merged.
+- **Ambiguous cases are intentionally left untouched** to avoid introducing new errors. For example `Aku cinta kamu.`, `Tolong, jangan lupa sama aku.`, and `bantu aku` are **not** merged. `blocked_hosts` (e.g. `jangan`, `kemarin`, `tolong`) can never act as a host word, and reduplicated forms (`jangan-jangan`, `kapan-kapan`) plus `-nya` adverbs (`sebenarnya`, `padahal`, `katanya`) are rejected as hosts.
+
+Precision is preferred over coverage: the layer only merges patterns it can resolve safely. When a candidate merge is rejected, the pronoun still falls back to the plain dictionary rule, so `hubungi saya` → `hubungi aku` rather than being skipped.
+
+### Configuration
+
+Rules live in `content/json/naturalize.json`. The file is authoritative — if the file or a key is missing, the built-in defaults are used.
+
+```json
+{
+  "enabled": true,
+  "prepositions": ["dengan", "dari", "kepada", "milik"],
+  "pronoun_groups": {
+    "1": ["saya", "aku"],
+    "2": ["kamu", "kau", "anda"],
+    "3": ["dia", "ia"]
+  },
+  "possessive_nouns": ["impian", "rumah", "nama"],
+  "blocked_hosts": ["jangan", "kemarin", "tolong"],
+  "nominal_suffixes": []
+}
+```
+
+- `enabled` — turn the whole layer on or off.
+- `prepositions` — words that may host a following pronoun.
+- `pronoun_groups` — group number → pronoun list, mapped to `-ku` / `-mu` / `-nya`.
+- `possessive_nouns` — nouns allowed to host a possessive pronoun.
+- `blocked_hosts` — words that must never become a host.
+- `nominal_suffixes` — optional suffixes treated as nominal endings when validating a host. Empty by default: the suffix heuristic proved too loose (`sebenarnya saya` would become `sebenarnyaku`), so only explicit `possessive_nouns` are trusted out of the box. Fill this in only if you want broader coverage and are willing to accept false positives.
+
+### Dictionary Priority & Overriding
+
+Multi-word dictionary entries always win — they are applied first and have the highest priority. This means the naturalization layer can be overridden per phrase through the Dictionary UI, e.g. an entry `impian saya` → any free text you choose will take effect instead of `impianku`.
+
+### Disabling the Feature
+
+Either switch the constant off in `functions.php`:
+
+```php
+define('ENABLE_PRONOUN_NATURALIZATION', false);
+```
+
+or set `"enabled": false` in `content/json/naturalize.json`.
+
+### Related Engine Changes
+
+- **Single-pass matching** — replacements are no longer chained, so no cascade re-replacement occurs.
+- **Unicode-aware word boundaries** — entries that end with punctuation (e.g. `Muncrat!`) now match correctly.
+- **Whitespace tolerance** — double spaces inside a multi-word phrase still match.
+- **Case safety** — uppercase/lowercase input is handled without breaking matches.
+- **ASS tag awareness** — `\N`, `\n`, `\h`, and `\H` are treated as boundaries, so `\Nimpian saya` becomes `\Nimpianku`.
+- **Accurate change log** — `getDictionaryChanges()` (the "dictionary changes" modal) now reports the actual final result, including clitic merges.
