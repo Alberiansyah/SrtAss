@@ -262,8 +262,8 @@ $(document).ready(function() {
     }
 
     function updateTimeDisplay() {
-        document.getElementById('currentTime').textContent = formatTime(video.currentTime);
-        document.getElementById('totalTime').textContent = formatTime(videoDuration);
+        document.getElementById('currentTime').textContent = formatTime(video.currentTime, true);
+        document.getElementById('totalTime').textContent = formatTime(videoDuration, true);
     }
 
     uploadPrompt.addEventListener('click', () => {
@@ -339,7 +339,18 @@ $(document).ready(function() {
             video._pendingSeek = fraction;
             return;
         }
-        video.currentTime = fraction * videoDuration;
+        let targetTime = fraction * videoDuration;
+        // Klik di dalam range subtitle: lompat ke start time sub (presisi milidetik) agar sinkron
+        for (let i = 0; i < parsedSubtitles.length; i++) {
+            if (targetTime >= parsedSubtitles[i].startTime && targetTime <= parsedSubtitles[i].endTime) {
+                selectSubtitle(i);
+                targetTime = parsedSubtitles[i].startTime;
+                break;
+            }
+        }
+        video.currentTime = targetTime;
+        updateTimeDisplay();
+        updateTimeline();
         video.play();
     });
 
