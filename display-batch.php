@@ -2201,70 +2201,52 @@ $dictionary = $_SESSION['dictionary'] ?? [];
         }
         
         // === Info frame ala Aegisub: timestamp frame, nomor frame, offset ke baris aktif ===
-        let frameSamples = [];      // [{f: presentedFrames, t: mediaTime}] dari requestVideoFrameCallback
+        // === Info frame ala Aegisub: timestamp frame, nomor frame, offset ke baris aktif ===
+        // Model CFR (constant frame rate) seperti timecode Aegisub:
+        // frame ke-n menempati rentang waktu [n/fps, (n+1)/fps)
         let fpsEstimate = null;
+        let fpsRates = [];          // sampel instantaneous fps dari playback berurutan
+        let lastFrameTime = null;   // mediaTime sampel terakhir untuk deteksi frame berurutan
         let frameTrackingStarted = false;
-        function pushFrameSample(md) {
-            const last = frameSamples[frameSamples.length - 1];
-            // Seek terdeteksi (mediaTime mundur / counter reset): buang map lama,
-            // fpsEstimate dipertahankan (stabil utk CFR, dibangun ulang utk VFR)
-            if (last && (md.mediaTime < last.t || md.presentedFrames <= last.f)) frameSamples = [];
-            frameSamples.push({ f: md.presentedFrames, t: md.mediaTime });
-            // Jaga agar map tidak membengkak: tipiskan separuh sampel jika terlalu banyak
-            if (frameSamples.length > 600) {
-                frameSamples = frameSamples.filter(function(s, i) { return i % 2 === 0; });
+        function snapFps(f) {
+            // Rekali ke nilai fps standar agar presisi ms frameTime sama dengan Aegisub
+            const std = [24000 / 1001, 24, 25, 30000 / 1001, 30, 48, 50, 60000 / 1001, 60, 90, 100, 120];
+            for (let i = 0; i < std.length; i++) {
+                if (Math.abs(f - std[i]) < 0.02) return std[i];
             }
-            // Estimasi fps: median delta lokal (kebal lonjakan counter & seek)
-            const s = frameSamples;
-            if (s.length >= 2) {
-                const rates = [];
-                for (let i = s.length - 1; i >= Math.max(1, s.length - 24); i--) {
-                    const dt = s[i].t - s[i - 1].t;
-                    if (dt > 0) rates.push((s[i].f - s[i - 1].f) / dt);
-                }
-                if (rates.length) {
-                    rates.sort(function(x, y) { return x - y; });
-                    fpsEstimate = rates[Math.floor(rates.length / 2)];
-                }
-            }
+            if (Math.abs(f - Math.round(f)) < 0.01) return Math.round(f);
+            return f;
         }
         function startFrameTracking() {
             if (frameTrackingStarted || !videoPlayer || !videoPlayer.requestVideoFrameCallback) return;
             frameTrackingStarted = true;
             const onFrame = function(now, metadata) {
-                pushFrameSample(metadata);
+                const t = metadata.mediaTime;
+                if (lastFrameTime !== null) {
+                    const dt = t - lastFrameTime;
+                    // Hanya frame berurutan normal saat playback (bukan efek seek) yang dikalibrasi
+                    if (dt > 0 && dt < 0.2) {
+                        fpsRates.push(1 / dt);
+                        if (fpsRates.length > 240) fpsRates.shift();
+                        if (fpsRates.length >= 5) {
+                            const sorted = fpsRates.slice().sort(function(a, b) { return a - b; });
+                            fpsEstimate = snapFps(sorted[Math.floor(sorted.length / 2)]);
+                        }
+                    }
+                }
+                lastFrameTime = t;
                 videoPlayer.requestVideoFrameCallback(onFrame);
             };
             videoPlayer.requestVideoFrameCallback(onFrame);
         }
         function resetFrameTracking() {
-            frameSamples = [];
             fpsEstimate = null;
+            fpsRates = [];
+            lastFrameTime = null;
             frameTrackingStarted = false;
         }
-        // Cari frame yang berisi waktu t:
-        // - dalam cakupan map sampel: interpolasi lokal (akurat utk VFR, seperti timecodes Aegisub)
-        // - di luar cakupan: frame = round(t x fps) ala CFR Aegisub
         function frameInfoAt(t) {
-            const s = frameSamples;
-            const n = s.length;
-            if (!fpsEstimate && n < 2) return null;
-            if (n >= 2 && t >= s[0].t && t <= s[n - 1].t) {
-                let lo = 0, hi = n - 1;
-                while (hi - lo > 1) {
-                    const mid = (lo + hi) >> 1;
-                    if (s[mid].t <= t) lo = mid; else hi = mid;
-                }
-                const a = s[lo], b = s[hi];
-                const dt = b.t - a.t, df = b.f - a.f;
-                if (dt > 0 && df !== 0) {
-                    const frame = Math.round(a.f + (t - a.t) * df / dt);
-                    const frameTime = a.t + (frame - a.f) * dt / df;
-                    return { frame: frame, frameTime: frameTime };
-                }
-                return { frame: a.f, frameTime: a.t };
-            }
-            if (!fpsEstimate) return n ? { frame: s[n - 1].f, frameTime: s[n - 1].t } : null;
+            if (!fpsEstimate || fpsEstimate <= 0) return null;
             const frame = Math.max(0, Math.round(t * fpsEstimate));
             return { frame: frame, frameTime: frame / fpsEstimate };
         }
