@@ -66,6 +66,7 @@ $dictionary = $_SESSION['dictionary'] ?? [];
                         <span class="text-muted">/</span>
                         <span id="totalTime">00:00:00</span>
                     </div>
+                    <div class="aegisub-info" id="aegisubInfo"></div>
                     <div class="playback-controls">
                         <button class="btn-control" id="btnBackward" title="Backward 5s (←)">
                             <i class="fas fa-backward"></i>

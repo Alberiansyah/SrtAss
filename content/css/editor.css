@@ -316,6 +316,18 @@
     white-space: nowrap;
 }
 
+/* Info frame ala Aegisub: timestamp frame - nomor frame (+offset ke baris aktif) */
+.aegisub-info {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    padding: 0.15rem 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.1em;
+}
+
 .timeline-slider-wrapper {
     flex: 1;
     min-width: 80px;

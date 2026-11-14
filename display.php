@@ -656,6 +656,7 @@ $styles = $_SESSION['styles'] ?? [];
                             </div>
                         </div>
                     </div>
+                    <div class="aegisub-info" id="aegisubInfo"></div>
                 </div>
 
                 <!-- Subtitle List Panel -->
@@ -1230,6 +1231,8 @@ $styles = $_SESSION['styles'] ?? [];
             if (videoPlayer) {
                 videoPlayer.addEventListener('loadedmetadata', function() {
                     duration = videoPlayer.duration;
+                    resetFrameTracking();
+                    startFrameTracking();
                     updateTimeDisplay();
                     renderTimelineBlocks();
                     // Terapkan posisi yang diklik sebelum video di-load (timeline: fraction, row subtitle: time)
@@ -1257,6 +1260,7 @@ $styles = $_SESSION['styles'] ?? [];
                 videoPlayer.addEventListener('play', function() {
                     isPlaying = true;
                     updatePlayButton();
+                    startFrameTracking();
                 });
                 
                 videoPlayer.addEventListener('pause', function() {
@@ -1932,9 +1936,111 @@ $styles = $_SESSION['styles'] ?? [];
             if (videoPlayer) videoPlayer.currentTime = Math.min(duration, currentTime + 5);
         }
         
+        // === Info frame ala Aegisub: timestamp frame, nomor frame, offset ke baris aktif ===
+        let frameSamples = [];      // [{f: presentedFrames, t: mediaTime}] dari requestVideoFrameCallback
+        let fpsEstimate = null;
+        let frameTrackingStarted = false;
+        function pushFrameSample(md) {
+            const last = frameSamples[frameSamples.length - 1];
+            // Seek terdeteksi (mediaTime mundur / counter reset): buang map lama,
+            // fpsEstimate dipertahankan (stabil utk CFR, dibangun ulang utk VFR)
+            if (last && (md.mediaTime < last.t || md.presentedFrames <= last.f)) frameSamples = [];
+            frameSamples.push({ f: md.presentedFrames, t: md.mediaTime });
+            // Jaga agar map tidak membengkak: tipiskan separuh sampel jika terlalu banyak
+            if (frameSamples.length > 600) {
+                frameSamples = frameSamples.filter(function(s, i) { return i % 2 === 0; });
+            }
+            // Estimasi fps: median delta lokal (kebal lonjakan counter & seek)
+            const s = frameSamples;
+            if (s.length >= 2) {
+                const rates = [];
+                for (let i = s.length - 1; i >= Math.max(1, s.length - 24); i--) {
+                    const dt = s[i].t - s[i - 1].t;
+                    if (dt > 0) rates.push((s[i].f - s[i - 1].f) / dt);
+                }
+                if (rates.length) {
+                    rates.sort(function(x, y) { return x - y; });
+                    fpsEstimate = rates[Math.floor(rates.length / 2)];
+                }
+            }
+        }
+        function startFrameTracking() {
+            if (frameTrackingStarted || !videoPlayer || !videoPlayer.requestVideoFrameCallback) return;
+            frameTrackingStarted = true;
+            const onFrame = function(now, metadata) {
+                pushFrameSample(metadata);
+                videoPlayer.requestVideoFrameCallback(onFrame);
+            };
+            videoPlayer.requestVideoFrameCallback(onFrame);
+        }
+        function resetFrameTracking() {
+            frameSamples = [];
+            fpsEstimate = null;
+            frameTrackingStarted = false;
+        }
+        // Cari frame yang berisi waktu t:
+        // - dalam cakupan map sampel: interpolasi lokal (akurat utk VFR, seperti timecodes Aegisub)
+        // - di luar cakupan: frame = round(t x fps) ala CFR Aegisub
+        function frameInfoAt(t) {
+            const s = frameSamples;
+            const n = s.length;
+            if (!fpsEstimate && n < 2) return null;
+            if (n >= 2 && t >= s[0].t && t <= s[n - 1].t) {
+                let lo = 0, hi = n - 1;
+                while (hi - lo > 1) {
+                    const mid = (lo + hi) >> 1;
+                    if (s[mid].t <= t) lo = mid; else hi = mid;
+                }
+                const a = s[lo], b = s[hi];
+                const dt = b.t - a.t, df = b.f - a.f;
+                if (dt > 0 && df !== 0) {
+                    const frame = Math.round(a.f + (t - a.t) * df / dt);
+                    const frameTime = a.t + (frame - a.f) * dt / df;
+                    return { frame: frame, frameTime: frameTime };
+                }
+                return { frame: a.f, frameTime: a.t };
+            }
+            if (!fpsEstimate) return n ? { frame: s[n - 1].f, frameTime: s[n - 1].t } : null;
+            const frame = Math.max(0, Math.round(t * fpsEstimate));
+            return { frame: frame, frameTime: frame / fpsEstimate };
+        }
+        function formatFrameTime(seconds) {
+            // Format ala Aegisub: 0:00:31.548 (jam tanpa leading zero, pemisah titik)
+            const totalMs = Math.max(0, Math.round(seconds * 1000));
+            const h = Math.floor(totalMs / 3600000);
+            const m = Math.floor((totalMs % 3600000) / 60000);
+            const s = Math.floor((totalMs % 60000) / 1000);
+            const ms = totalMs % 1000;
+            return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(ms).padStart(3, '0');
+        }
+        function updateAegisubInfo() {
+            const el = document.getElementById('aegisubInfo');
+            if (!el) return;
+            if (!videoPlayer || !duration || !isFinite(duration) || duration <= 0) {
+                el.textContent = '';
+                return;
+            }
+            const fi = frameInfoAt(currentTime);
+            if (!fi) {
+                el.textContent = 'Frame: play video sebentar untuk kalibrasi fps...';
+                return;
+            }
+            let offsets = '';
+            if (selectedSubtitle !== null && subtitleData[selectedSubtitle]) {
+                const startMs = Math.round(parseTimestamp(subtitleData[selectedSubtitle].start) * 1000);
+                const endMs = Math.round(parseTimestamp(subtitleData[selectedSubtitle].end) * 1000);
+                const ftMs = Math.round(fi.frameTime * 1000);
+                const startOff = ftMs - startMs;
+                const endOff = ftMs - endMs;
+                offsets = ' (' + (startOff < 0 ? '-' : '+') + Math.abs(startOff) + 'ms; ' + (endOff < 0 ? '-' : '+') + Math.abs(endOff) + 'ms)';
+            }
+            el.textContent = formatFrameTime(fi.frameTime) + ' - frame ' + fi.frame + offsets;
+        }
+
         function updateTimeDisplay() {
             $('#currentTime').text(formatTime(currentTime));
             $('#totalTime').text(formatTime(duration));
+            updateAegisubInfo();
         }
         
         function formatTime(seconds) {
