@@ -33,7 +33,7 @@ $styles = $_SESSION['styles'] ?? [];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="content/css/theme.css">
-    <link rel="stylesheet" href="content/css/editor.css">
+    <link rel="stylesheet" href="content/css/editor.css?v=<?= time() ?>">
     <style>
         :root {
             --primary: #6366f1;
@@ -1447,7 +1447,7 @@ $styles = $_SESSION['styles'] ?? [];
             timelineSeek.css('cursor', 'pointer');
             window.pendingSeek = null; // posisi timeline yang diklik sebelum video di-load
             let timelineDragging = false;
-            function seekFromEvent(e) {
+            function seekFromEvent(e, snapToSubtitle) {
                 const rect = timelineSeek[0].getBoundingClientRect();
                 const fraction = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
                 if (!videoPlayer || !duration) {
@@ -1455,17 +1455,30 @@ $styles = $_SESSION['styles'] ?? [];
                     window.pendingSeek = { fraction: fraction };
                     return;
                 }
-                videoPlayer.currentTime = fraction * duration;
+                let time = fraction * duration;
+                // Klik di dalam range subtitle: lompat ke start time sub (presisi milidetik) agar sinkron
+                if (snapToSubtitle && window.subtitleData && window.subtitleData.length) {
+                    for (let i = 0; i < window.subtitleData.length; i++) {
+                        const subStart = parseTimestamp(window.subtitleData[i].start);
+                        const subEnd = parseTimestamp(window.subtitleData[i].end);
+                        if (time >= subStart && time <= subEnd) {
+                            selectSubtitle(i);
+                            time = subStart;
+                            break;
+                        }
+                    }
+                }
+                videoPlayer.currentTime = time;
                 currentTime = videoPlayer.currentTime;
                 updateSlider();
                 updateTimeDisplay();
             }
             timelineSeek.on('mousedown', function(e) {
                 timelineDragging = true;
-                seekFromEvent(e);
+                seekFromEvent(e, true);
             });
             $(document).on('mousemove', function(e) {
-                if (timelineDragging) seekFromEvent(e);
+                if (timelineDragging) seekFromEvent(e, false);
             });
             $(document).on('mouseup', function() {
                 timelineDragging = false;

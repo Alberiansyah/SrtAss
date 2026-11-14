@@ -451,13 +451,16 @@ $(document).ready(function() {
         document.getElementById('btnSaveSubtitle').click();
     });
 
-    document.getElementById('themeToggle').addEventListener('click', function() {
-        const current = document.documentElement.getAttribute('data-bs-theme');
-        const newTheme = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-bs-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        $('#themeIcon').toggleClass('fa-moon fa-sun');
-    });
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const current = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            $('#themeIcon').toggleClass('fa-moon fa-sun');
+        });
+    }
 
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-bs-theme', savedTheme);
