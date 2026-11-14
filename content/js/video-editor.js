@@ -37,11 +37,14 @@ $(document).ready(function() {
     }
 
     function formatTime(seconds, includeMs = false) {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = Math.floor(seconds % 60);
+        // Bulatkan total ms dulu supaya bebas dari floating-point error
+        // (mis. 24.258 tersimpan sebagai 24.257999... -> floor memberi 257, bukan 258)
+        const totalMs = Math.max(0, Math.round(seconds * 1000));
+        const h = Math.floor(totalMs / 3600000);
+        const m = Math.floor((totalMs % 3600000) / 60000);
+        const s = Math.floor((totalMs % 60000) / 1000);
+        const ms = totalMs % 1000;
         if (includeMs) {
-            const ms = Math.floor((seconds % 1) * 1000);
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
         }
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
